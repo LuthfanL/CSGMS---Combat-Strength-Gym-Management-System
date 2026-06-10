@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-main: #f8fafc;
+    --text-main: #0f172a;
+    --bg-card: #f8fafc; /* Slate 50 */
+    --bg-sidebar: #ffffff;
+    --bg-dashboard: #f1f5f9; /* Slate 100 */
+    --border-color: #e2e8f0; /* Slate 200 */
+    --accent-neon: #e11d48; /* Deeper red for light mode */
+    --accent-hover: #be123c;
+  }
+
+  .dark {
+    --bg-main: #0a0a0a;
+    --text-main: #f8fafc;
+    --bg-card: #18181b; /* Slightly lighter for cards */
+    --bg-sidebar: #27272a; /* Lighter sidebar for dark mode */
+    --bg-dashboard: #131316; /* Dashboard background */
+    --border-color: #3f3f46;
+    --accent-neon: #ff2a2a; /* Neon red for dark mode */
+    --accent-hover: #ff4d4d;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased transition-colors duration-300;
+  }
+}
