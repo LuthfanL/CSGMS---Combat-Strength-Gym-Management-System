@@ -32,6 +32,10 @@ import PaymentInvoice from './pages/member/Invoice';
 import MemberPayments from './pages/member/Payments';
 import MemberAttendance from './pages/member/Attendance';
 
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import { Toaster } from 'sonner';
+
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
 
@@ -58,45 +62,60 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col transition-colors duration-300 bg-background text-foreground">
-        <Routes>
-          {/* Public Routes */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-          </Route>
+      <AuthProvider>
+        <Toaster position="top-center" richColors theme={isDarkMode ? 'dark' : 'light'} />
+        <div className="min-h-screen flex flex-col transition-colors duration-300 bg-background text-foreground">
+          <Routes>
+            {/* Public Routes */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<Login />} />
+            </Route>
 
-          {/* Owner Dashboard Routes */}
-          <Route path="/owner" element={<DashboardLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode} />}>
-            <Route path="dashboard" element={<OwnerDashboard />} />
-            <Route path="data" element={<OwnerDataView />} />
-            <Route path="settings" element={<OwnerSettings />} />
-            <Route path="admins" element={<OwnerAdmins />} />
-            <Route path="audit-logs" element={<OwnerAuditLogs />} />
-          </Route>
+            {/* Owner Dashboard Routes */}
+            <Route path="/owner" element={
+              <ProtectedRoute allowedRoles={['owner']}>
+                <DashboardLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<OwnerDashboard />} />
+              <Route path="data" element={<OwnerDataView />} />
+              <Route path="settings" element={<OwnerSettings />} />
+              <Route path="admins" element={<OwnerAdmins />} />
+              <Route path="audit-logs" element={<OwnerAuditLogs />} />
+            </Route>
 
-          {/* Admin Dashboard Routes */}
-          <Route path="/admin" element={<AdminLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode} />}>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="checkin" element={<AdminCheckIn />} />
-            <Route path="guest" element={<AdminGuest />} />
-            <Route path="members" element={<AdminMembers />} />
-            <Route path="packages" element={<AdminPackages />} />
-            <Route path="payments" element={<AdminPayments />} />
-          </Route>
+            {/* Admin Dashboard Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="checkin" element={<AdminCheckIn />} />
+              <Route path="guest" element={<AdminGuest />} />
+              <Route path="members" element={<AdminMembers />} />
+              <Route path="packages" element={<AdminPackages />} />
+              <Route path="payments" element={<AdminPayments />} />
+            </Route>
 
-          {/* Member Dashboard Routes */}
-          <Route path="/member" element={<MemberLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode} />}>
-            <Route path="dashboard" element={<MemberDashboard />} />
-            <Route path="membership" element={<MemberMembership />} />
-            <Route path="checkout" element={<MemberCheckout />} />
-            <Route path="invoice/:id" element={<PaymentInvoice />} />
-            <Route path="payments" element={<MemberPayments />} />
-            <Route path="attendance" element={<MemberAttendance />} />
-          </Route>
-        </Routes>
-      </div>
+            {/* Member Dashboard Routes */}
+            <Route path="/member" element={
+              <ProtectedRoute allowedRoles={['member']}>
+                <MemberLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<MemberDashboard />} />
+              <Route path="membership" element={<MemberMembership />} />
+              <Route path="checkout" element={<MemberCheckout />} />
+              <Route path="invoice/:id" element={<PaymentInvoice />} />
+              <Route path="payments" element={<MemberPayments />} />
+              <Route path="attendance" element={<MemberAttendance />} />
+            </Route>
+          </Routes>
+        </div>
+      </AuthProvider>
     </Router>
   );
 }

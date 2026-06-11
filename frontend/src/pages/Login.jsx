@@ -1,8 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Dumbbell } from 'lucide-react';
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Mail, Lock, Dumbbell, Eye, EyeOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'sonner';
 
 const Login = () => {
   useEffect(() => {
@@ -10,10 +12,26 @@ const Login = () => {
   }, []);
 
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [loginError, setLoginError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  const onSubmit = (data) => {
-    console.log(data);
-    alert('Login berhasil disimulasikan! (Multi-role akan ditangani di backend)');
+  const onSubmit = async (data) => {
+    setLoginError('');
+    const result = await login(data.email, data.password);
+    
+    if (result.success) {
+      const roleName = result.role.charAt(0).toUpperCase() + result.role.slice(1);
+      toast.success(`Berhasil Login sebagai ${roleName}`);
+      
+      if (result.role === 'owner') navigate('/owner/dashboard');
+      else if (result.role === 'admin') navigate('/admin/dashboard');
+      else if (result.role === 'member') navigate('/member/dashboard');
+      else navigate('/');
+    } else {
+      setLoginError(result.message);
+    }
   };
 
   return (
@@ -37,6 +55,11 @@ const Login = () => {
           transition={{ duration: 0.5 }}
           className="bg-card py-6 px-6 sm:px-10 shadow-2xl rounded-2xl border border-border"
         >
+          {loginError && (
+            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{loginError}</span>
+            </div>
+          )}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Email */}
             <div>
@@ -66,13 +89,24 @@ const Login = () => {
                   <Lock className="h-5 w-5 text-foreground/40" />
                 </div>
                 <input
-                  type="password"
-                  className="bg-background block w-full pl-10 pr-3 py-2 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
+                  type={showPassword ? "text" : "password"}
+                  className="bg-background block w-full pl-10 pr-10 py-2 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                   placeholder="••••••••"
                   {...register('password', { 
                     required: 'Password wajib diisi'
                   })}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-foreground/40 hover:text-foreground focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
               {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>}
             </div>

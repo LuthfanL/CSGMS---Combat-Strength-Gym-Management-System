@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -35,9 +36,11 @@ const MemberLayout = ({ toggleTheme, isDarkMode }) => {
     { name: 'Riwayat Kehadiran', path: '/member/attendance', icon: History },
   ];
 
-  const confirmLogout = () => {
+  const { logout } = useAuth();
+
+  const confirmLogout = async () => {
     setShowLogoutModal(false);
-    navigate('/');
+    await logout();
   };
 
   // Close sidebar on mobile when navigating

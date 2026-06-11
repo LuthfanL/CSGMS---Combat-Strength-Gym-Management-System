@@ -39,9 +39,9 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) => 
       )}
     </div>
     <div>
-      <h3 className="text-foreground/70 text-sm font-medium">{title}</h3>
-      <p className="text-3xl font-bold text-foreground mt-1">{value}</p>
-      {subtitle && <p className="text-xs text-foreground/50 mt-1">{subtitle}</p>}
+      <h3 className="text-3xl font-bold text-foreground mb-1">{value}</h3>
+      <p className="text-sm font-medium text-foreground/80 mb-1">{title}</p>
+      <p className="text-xs text-foreground/50">{subtitle}</p>
     </div>
   </div>
 );
@@ -52,7 +52,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-full space-y-4 pb-4">
+    <div className="flex flex-col h-full space-y-6 pb-4">
       <div>
         <h1 className="text-xl font-bold text-foreground">Ringkasan Hari Ini</h1>
         <p className="text-foreground/70 text-xs">Overview operasional gym Anda hari ini.</p>
