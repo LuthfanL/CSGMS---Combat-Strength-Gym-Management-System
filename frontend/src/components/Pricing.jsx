@@ -35,61 +35,75 @@ const packages = [
 
 const Pricing = () => {
   return (
-    <div id="pricing" className="bg-background py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-base text-primary font-semibold tracking-wide uppercase">Paket Membership</h2>
-          <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-foreground sm:text-4xl">
-            Pilih Paket Sesuai Target Anda
-          </p>
-          <p className="mt-4 max-w-2xl text-xl text-foreground/70 mx-auto">
+    <div id="pricing" className="bg-background dark:bg-[#0a0a0a] py-20 relative overflow-hidden transition-colors">
+      {/* Subtle background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <span className="inline-block py-1.5 px-5 rounded-full bg-primary/10 text-primary text-sm font-bold mb-6 border border-primary/20 tracking-widest uppercase">
+            Paket Membership
+          </span>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-foreground dark:text-white mb-4 leading-tight">
+            Pilih Paket Sesuai <span className="text-primary">Target Anda</span>
+          </h2>
+          <p className="max-w-2xl text-sm md:text-base text-foreground/60 dark:text-white/60 mx-auto font-medium">
             Dapatkan hasil maksimal dengan memilih durasi membership yang tepat untuk Anda.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {packages.map((pkg, index) => (
             <motion.div
               key={pkg.name}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
+              whileHover={{ 
+                y: -10,
+                scale: 1.02,
+                rotateX: 2,
+                rotateY: -2,
+                boxShadow: pkg.popular ? "0 25px 50px -12px rgba(225,29,72,0.4)" : "0 25px 50px -12px rgba(0,0,0,0.4)"
+              }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative bg-card rounded-2xl shadow-xl border ${pkg.popular ? 'border-primary shadow-[0_0_30px_rgba(255,42,42,0.15)]' : 'border-border'} p-8 flex flex-col hover:-translate-y-2 transition-transform duration-300`}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className={`relative rounded-2xl border ${pkg.popular ? 'border-primary dark:border-primary/50 bg-primary/5 dark:bg-primary/[0.05] shadow-[0_0_20px_rgba(225,29,72,0.15)]' : 'border-border dark:border-white/10 bg-card dark:bg-white/[0.02]'} p-6 flex flex-col backdrop-blur-sm group z-0 hover:z-10`}
             >
               {pkg.popular && (
-                <div className="absolute top-0 right-6 transform -translate-y-1/2">
-                  <span className="bg-primary text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                  <span className="bg-primary text-white text-[10px] font-bold uppercase tracking-wider py-1 px-3 rounded-full shadow-lg">
                     Terpopuler
                   </span>
                 </div>
               )}
               
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold text-foreground mb-2">{pkg.name}</h3>
-                <div className="flex items-baseline text-4xl font-extrabold text-foreground">
+              <div className="mb-5 text-center relative">
+                <h3 className="text-lg font-bold text-foreground dark:text-white/90 mb-1">{pkg.name}</h3>
+                <div className="flex items-center justify-center text-3xl font-black text-foreground dark:text-white tracking-tight">
                   {pkg.price}
                 </div>
-                <p className="text-foreground/50 mt-1">/ {pkg.duration}</p>
+                <p className="text-foreground/50 dark:text-white/40 text-xs mt-1 font-medium">/ {pkg.duration}</p>
               </div>
 
-              <ul className="space-y-4 mb-8 flex-1">
+              <ul className="space-y-3 mb-6 flex-1">
                 {pkg.features.map((feature) => (
                   <li key={feature} className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Check className="h-5 w-5 text-primary" aria-hidden="true" />
+                    <div className="flex-shrink-0 mt-0.5">
+                      <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 text-primary" strokeWidth={3} aria-hidden="true" />
+                      </div>
                     </div>
-                    <p className="ml-3 text-base text-foreground/70">{feature}</p>
+                    <p className="ml-3 text-sm text-foreground/70 dark:text-white/70 leading-snug">{feature}</p>
                   </li>
                 ))}
               </ul>
 
               <Link
                 to="/register"
-                className={`w-full py-3 px-4 rounded-md shadow text-center font-medium transition-colors ${
+                className={`w-full py-2.5 px-4 rounded-xl text-center text-sm font-bold transition-all duration-300 ${
                   pkg.popular 
-                    ? 'bg-primary text-white hover:bg-primary-hover shadow-[0_0_15px_rgba(255,42,42,0.3)]' 
-                    : 'bg-background text-foreground border border-border hover:border-primary hover:text-primary'
+                    ? 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25 hover:shadow-primary/40' 
+                    : 'bg-foreground/5 dark:bg-white/5 text-foreground dark:text-white border border-transparent hover:border-border dark:hover:border-white/10 hover:bg-foreground/10 dark:hover:bg-white/10'
                 }`}
               >
                 Pilih Paket

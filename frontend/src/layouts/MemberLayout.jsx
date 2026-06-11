@@ -4,11 +4,9 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
-  FileText, 
-  Database, 
-  Settings, 
-  Users, 
-  History, 
+  Package, 
+  CreditCard,
+  History,
   LogOut, 
   Menu, 
   X,
@@ -17,7 +15,7 @@ import {
   Moon
 } from 'lucide-react';
 
-const DashboardLayout = ({ toggleTheme, isDarkMode }) => {
+const MemberLayout = ({ toggleTheme, isDarkMode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -31,11 +29,10 @@ const DashboardLayout = ({ toggleTheme, isDarkMode }) => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   const navItems = [
-    { name: 'Dashboard', path: '/owner/dashboard', icon: LayoutDashboard },
-    { name: 'Data Operasional', path: '/owner/data', icon: Database },
-    { name: 'Pengaturan Gym', path: '/owner/settings', icon: Settings },
-    { name: 'Akun Admin', path: '/owner/admins', icon: Users },
-    { name: 'Audit Log', path: '/owner/audit-logs', icon: History },
+    { name: 'Dashboard', path: '/member/dashboard', icon: LayoutDashboard },
+    { name: 'Beli / Perpanjang', path: '/member/membership', icon: Package },
+    { name: 'Riwayat Pembayaran', path: '/member/payments', icon: CreditCard },
+    { name: 'Riwayat Kehadiran', path: '/member/attendance', icon: History },
   ];
 
   const confirmLogout = () => {
@@ -72,15 +69,15 @@ const DashboardLayout = ({ toggleTheme, isDarkMode }) => {
         {/* Mobile Dropdown Menu */}
         {isSidebarOpen && (
           <>
-            <div className="fixed inset-0 top-16 bg-black/50 z-40 transition-opacity" onClick={() => setIsSidebarOpen(false)} />
+            <div className="fixed inset-0 top-16 bg-black/40 backdrop-blur-md z-40 transition-opacity" onClick={() => setIsSidebarOpen(false)} />
             <div className="bg-card border-b border-border shadow-xl flex flex-col absolute top-16 left-0 w-full max-h-[calc(100dvh-64px)] overflow-y-auto z-50">
               <div className="px-4 py-3 border-b border-border bg-background/30">
                 <p className="text-xs text-foreground/60">Login sebagai:</p>
-                <p className="font-medium text-sm text-primary">Owner</p>
+                <p className="font-medium text-sm text-primary">Member</p>
               </div>
               <nav className="flex flex-col py-2 px-2 space-y-1">
                 {navItems.map((item) => {
-                  const isActive = location.pathname === item.path;
+                  const isActive = location.pathname.includes(item.path);
                   const Icon = item.icon;
                   
                   return (
@@ -130,13 +127,13 @@ const DashboardLayout = ({ toggleTheme, isDarkMode }) => {
         {/* User Info */}
         <div className="px-6 py-4 border-b border-border bg-background/30">
           <p className="text-sm text-foreground/60">Login sebagai:</p>
-          <p className="font-semibold text-lg text-primary">Owner</p>
+          <p className="font-semibold text-lg text-primary">Member</p>
         </div>
 
         {/* Navigation Links */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname.includes(item.path);
             const Icon = item.icon;
             
             return (
@@ -233,4 +230,4 @@ const DashboardLayout = ({ toggleTheme, isDarkMode }) => {
   );
 };
 
-export default DashboardLayout;
+export default MemberLayout;
