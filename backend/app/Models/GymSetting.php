@@ -24,9 +24,4 @@ class GymSetting extends Model
         'instagram',
         'tiktok',
     ];
-
-    public function uniqueIds(): array
-    {
-        return ['idGym'];
-    }
 }

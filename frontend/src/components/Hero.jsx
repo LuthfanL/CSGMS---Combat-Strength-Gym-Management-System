@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
+import { useGym } from '../context/GymContext';
 
 const motivationData = [
   {
@@ -24,6 +25,8 @@ const motivationData = [
 ];
 
 const Hero = () => {
+  const { gymSettings } = useGym();
+
   return (
     <div className="relative w-full bg-background overflow-hidden">
       {/* FULL BLEED BACKGROUND IMAGE */}
@@ -46,8 +49,8 @@ const Hero = () => {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="max-w-4xl"
         >
-          <span className="inline-block py-1.5 px-4 rounded-full bg-primary/10 text-primary text-sm font-bold mb-6 border border-primary/20 tracking-wide">
-            COMBAT STRENGTH GYM
+          <span className="inline-block py-1.5 px-4 rounded-full bg-primary/10 text-primary text-sm font-bold mb-6 border border-primary/20 tracking-wide uppercase">
+            {gymSettings?.gym_name || 'COMBAT STRENGTH GYM'}
           </span>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-foreground mb-6 uppercase leading-[1.1]">
             Bangun Kekuatan <br className="hidden sm:block" />
@@ -56,7 +59,7 @@ const Hero = () => {
             </span>
           </h1>
           <p className="mt-4 max-w-2xl md:mx-auto text-lg md:text-xl text-foreground/80 mb-10 font-medium">
-            Sistem manajemen gym terpadu yang memudahkan pendaftaran, check-in, dan pelacakan perkembangan kebugaran Anda.
+            {gymSettings?.description || 'Sistem manajemen gym terpadu yang memudahkan pendaftaran, check-in, dan pelacakan perkembangan kebugaran Anda.'}
           </p>
           
           <div className="flex flex-col sm:flex-row justify-start md:justify-center gap-4">

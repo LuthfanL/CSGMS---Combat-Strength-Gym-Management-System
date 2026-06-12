@@ -1,9 +1,21 @@
 import { Link } from 'react-router-dom';
 import { Dumbbell, Moon, Sun, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { useGym } from '../context/GymContext';
 
 const Navbar = ({ toggleTheme, isDarkMode }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { gymSettings } = useGym();
+
+  const renderGymName = (name) => {
+    if (!name) return 'CSGMS';
+    return name.split(' ').map((word, index) => {
+      if (word.toLowerCase() === 'strength') {
+        return <span key={index} className="text-primary">{word} </span>;
+      }
+      return <span key={index} className="text-foreground/90">{word} </span>;
+    });
+  };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -12,9 +24,15 @@ const Navbar = ({ toggleTheme, isDarkMode }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <Link to="/" className="flex items-center gap-2">
-              <Dumbbell className="h-8 w-8 text-primary" />
-              <span className="font-bold text-xl tracking-wider">CSGMS</span>
+            <Link to="/" className="flex items-center gap-3">
+              {gymSettings?.logo ? (
+                <img src={`http://localhost:8000/storage/${gymSettings.logo}`} alt="Logo" className="h-12 w-12 object-contain" />
+              ) : (
+                <Dumbbell className="h-10 w-10 text-primary" />
+              )}
+              <span className="font-bold text-xs md:text-sm tracking-widest uppercase truncate max-w-[180px] md:max-w-[350px]">
+                {renderGymName(gymSettings?.gym_name)}
+              </span>
             </Link>
           </div>
           <div className="hidden md:block">

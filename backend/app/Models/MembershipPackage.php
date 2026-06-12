@@ -19,6 +19,7 @@ class MembershipPackage extends Model
         'duration',
         'facilities',
         'price',
+        'is_active',
     ];
 
     protected function casts(): array

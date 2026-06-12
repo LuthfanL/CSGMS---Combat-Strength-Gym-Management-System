@@ -91,8 +91,40 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
+  const register = async (formData) => {
+    try {
+      const response = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+      
+      const data = await response.json();
+
+      if (response.ok) {
+        setToken(data.token);
+        setUser(data.user);
+        localStorage.setItem('auth_token', data.token);
+        return { success: true, role: data.user.role };
+      } else {
+        // Collect validation errors from Laravel if any
+        let errorMsg = data.message;
+        if (data.errors) {
+          const firstError = Object.values(data.errors)[0][0];
+          errorMsg = firstError;
+        }
+        return { success: false, message: errorMsg };
+      }
+    } catch (error) {
+      console.error("Register error", error);
+      return { success: false, message: 'Terjadi kesalahan koneksi' };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, token, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

@@ -77,9 +77,63 @@ const DataView = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
-  const handleView = (member) => {
-    setSelectedMember(member);
-    setIsViewModalOpen(true);
+  // States for members
+  const [members, setMembers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Fetch members
+  useEffect(() => {
+    if (activeTab !== 'members') return;
+    
+    const fetchMembers = async () => {
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`http://localhost:8000/api/owner/members?page=${page}&search=${search}&status=${status}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMembers(data.data);
+          setTotalPages(data.last_page);
+        }
+      } catch (err) {
+        console.error('Failed to fetch members:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Debounce search
+    const timer = setTimeout(() => {
+      fetchMembers();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [activeTab, page, search, status]);
+
+  const handleView = async (member) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:8000/api/owner/members/${member.idMember}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedMember(data);
+        setIsViewModalOpen(true);
+      }
+    } catch (err) {
+      console.error('Failed to fetch member details:', err);
+    }
   };
 
   const closeModal = () => {
@@ -89,10 +143,18 @@ const DataView = () => {
   };
 
   const formatRupiahCustom = (numberStr) => {
-    // format as 250.000,-
     const num = parseInt(numberStr, 10);
     const formatted = new Intl.NumberFormat('id-ID').format(num);
     return `${formatted},-`;
+  };
+
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (page < totalPages) setPage(page + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (page > 1) setPage(page - 1);
   };
 
   return (
@@ -145,6 +207,8 @@ const DataView = () => {
           <input 
             type="text" 
             placeholder={`Cari data ${activeTab}...`} 
+            value={activeTab === 'members' ? search : ''}
+            onChange={(e) => activeTab === 'members' && setSearch(e.target.value)}
             className="pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm w-full focus:ring-primary focus:border-primary text-foreground shadow-sm transition-colors"
           />
         </div>
@@ -174,13 +238,18 @@ const DataView = () => {
             </>
           )}
 
-          <select className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-primary focus:border-primary transition-colors shadow-sm w-full sm:w-auto">
+          <select 
+            value={activeTab === 'members' ? status : ''}
+            onChange={(e) => activeTab === 'members' && setStatus(e.target.value)}
+            className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-primary focus:border-primary transition-colors shadow-sm w-full sm:w-auto"
+          >
             {activeTab === 'members' && (
               <>
                 <option value="">Semua Status</option>
                 <option value="aktif">Aktif</option>
                 <option value="expired">Expired</option>
                 <option value="nonaktif">Nonaktif</option>
+                <option value="belum_aktif">Belum Aktif</option>
               </>
             )}
             {activeTab === 'transactions' && (
@@ -215,57 +284,102 @@ const DataView = () => {
       <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           {activeTab === 'members' && (
-            <table className="w-full text-xs text-left text-foreground/80">
-              <thead className="text-xs text-foreground uppercase bg-background border-b border-border">
-                <tr>
-                  <th className="px-4 py-3 text-center">Member</th>
-                  <th className="px-4 py-3 text-center">Kontak</th>
-                  <th className="px-4 py-3 text-center">Status</th>
-                  <th className="px-4 py-3 text-center">Expired</th>
-                  <th className="px-4 py-3 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {dummyMembers.map(member => (
-                  <tr key={member.id} className="hover:bg-background/50 transition-colors">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
-                          {member.name.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground text-sm">{member.name}</div>
-                          <div className="text-[10px] text-foreground/50">{member.code}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="text-xs text-foreground">{member.phone}</div>
-                      <div className="text-[10px] text-foreground/50">{member.email}</div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
-                        member.status === 'Aktif' 
-                        ? 'bg-green-500/10 text-green-500 border-green-500/20' 
-                        : 'bg-red-500/10 text-red-500 border-red-500/20'
-                      }`}>
-                        {member.status}
-                      </span>
-                    </td>
-                    <td className={`px-4 py-3 text-center text-xs ${member.status === 'Expired' ? 'text-red-500 font-medium' : ''}`}>
-                      {member.expired}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-center">
-                        <button onClick={() => handleView(member)} className="p-1.5 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 rounded transition-colors" title="Lihat Profil">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+            <>
+              <table className="w-full text-xs text-left text-foreground/80">
+                <thead className="text-xs text-foreground uppercase bg-background border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3 text-center">Member</th>
+                    <th className="px-4 py-3 text-center">Kontak</th>
+                    <th className="px-4 py-3 text-center">Status</th>
+                    <th className="px-4 py-3 text-center">Expired</th>
+                    <th className="px-4 py-3 text-center">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border relative">
+                  {isLoading && (
+                    <tr>
+                      <td colSpan="5" className="px-4 py-8 text-center text-foreground/50">
+                        Loading...
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && members.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="px-4 py-8 text-center text-foreground/50">
+                        Data tidak ditemukan
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && members.map(member => (
+                    <tr key={member.idMember} className="hover:bg-background/50 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          {member.photo ? (
+                            <img src={`http://localhost:8000/storage/${member.photo}`} alt={member.name} className="w-8 h-8 rounded-full object-cover border border-border" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+                              {member.name.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium text-foreground text-sm">{member.name}</div>
+                            <div className="text-[10px] text-foreground/50">{member.member_code}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="text-xs text-foreground">{member.phone}</div>
+                        <div className="text-[10px] text-foreground/50">{member.email}</div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
+                          member.membership_status === 'Aktif' 
+                          ? 'bg-green-500/10 text-green-500 border-green-500/20' 
+                          : member.membership_status === 'Expired'
+                          ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                          : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                        }`}>
+                          {member.membership_status}
+                        </span>
+                      </td>
+                      <td className={`px-4 py-3 text-center text-xs ${member.membership_status === 'Expired' ? 'text-red-500 font-medium' : ''}`}>
+                        {member.end_date ? new Date(member.end_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-center">
+                          <button onClick={() => handleView(member)} className="p-1.5 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 rounded transition-colors" title="Lihat Profil">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {/* Pagination Controls */}
+              <div className="flex justify-between items-center px-4 py-3 bg-background border-t border-border">
+                <span className="text-xs text-foreground/60">
+                  Halaman {page} dari {totalPages}
+                </span>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={handlePrevPage} 
+                    disabled={page === 1}
+                    className="px-3 py-1 text-xs border border-border rounded disabled:opacity-50 hover:bg-border/50 transition-colors"
+                  >
+                    Sebelumnya
+                  </button>
+                  <button 
+                    onClick={handleNextPage} 
+                    disabled={page === totalPages}
+                    className="px-3 py-1 text-xs border border-border rounded disabled:opacity-50 hover:bg-border/50 transition-colors"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            </>
           )}
 
           {activeTab === 'transactions' && (
@@ -360,12 +474,16 @@ const DataView = () => {
             {/* Modal Body */}
             <div className="p-6 space-y-6">
               <div className="flex flex-col items-center gap-2 text-center pb-2">
-                <div className="w-24 h-24 rounded-full bg-primary/10 border-4 border-primary/20 flex items-center justify-center text-primary font-bold text-4xl shadow-inner mb-2">
-                  {selectedMember.name.charAt(0)}
-                </div>
+                {selectedMember.photo ? (
+                  <img src={`http://localhost:8000/storage/${selectedMember.photo}`} alt={selectedMember.name} className="w-24 h-24 rounded-full object-cover border-4 border-primary/20 shadow-inner mb-2" />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-primary/10 border-4 border-primary/20 flex items-center justify-center text-primary font-bold text-4xl shadow-inner mb-2">
+                    {selectedMember.name.charAt(0)}
+                  </div>
+                )}
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">{selectedMember.name}</h2>
-                  <p className="text-sm text-foreground/50 font-medium">{selectedMember.code}</p>
+                  <p className="text-sm text-foreground/50 font-medium">{selectedMember.member_code}</p>
                 </div>
               </div>
 
@@ -384,20 +502,28 @@ const DataView = () => {
                 </div>
                 <div className="flex items-center gap-3 text-foreground/80 pt-2 border-t border-border">
                   <Calendar className="w-4 h-4 text-primary" />
-                  <span>Bergabung: <strong className="text-foreground">{selectedMember.joinDate}</strong></span>
+                  <span>Bergabung: <strong className="text-foreground">{selectedMember.join_date ? new Date(selectedMember.join_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</strong></span>
                 </div>
               </div>
 
               <div className="bg-background border border-border rounded-xl p-4 flex justify-between items-center">
                 <div>
                   <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">Status Membership</p>
-                  <p className={`text-sm font-bold ${selectedMember.status === 'Aktif' ? 'text-green-500' : 'text-red-500'}`}>
-                    {selectedMember.status}
+                  <p className={`text-sm font-bold ${
+                    selectedMember.membership_status === 'Aktif' 
+                    ? 'text-green-500' 
+                    : selectedMember.membership_status === 'Expired' 
+                    ? 'text-red-500' 
+                    : 'text-yellow-500'
+                  }`}>
+                    {selectedMember.membership_status}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">Berlaku Sampai</p>
-                  <p className="text-sm font-bold text-foreground">{selectedMember.expired}</p>
+                  <p className="text-sm font-bold text-foreground">
+                    {selectedMember.end_date ? new Date(selectedMember.end_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                  </p>
                 </div>
               </div>
             </div>

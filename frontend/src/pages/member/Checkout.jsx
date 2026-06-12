@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { QrCode, Banknote, AlertCircle, CheckCircle2, ChevronLeft } from 'lucide-react';
+import { QrCode, Banknote, AlertCircle, CheckCircle2, ChevronLeft, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
+
+const API_URL = 'http://localhost:8000/api';
 
 const MemberCheckout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = useAuth();
   const pkg = location.state?.pkg; // Get package from navigation state
 
   const [paymentMethod, setPaymentMethod] = useState(''); // 'qris' or 'cash'
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // If directly accessed without package, redirect back
   useEffect(() => {
@@ -18,15 +24,35 @@ const MemberCheckout = () => {
     }
   }, [pkg, navigate]);
 
-  const handleConfirmPayment = () => {
-    setShowConfirmModal(false);
-    // Simulasi API call
-    const invoiceId = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
-    setTimeout(() => {
-      navigate(`/member/invoice/${invoiceId}`, {
-        state: { pkg, paymentMethod }
+  const handleConfirmPayment = async () => {
+    if (!paymentMethod) return;
+    
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`${API_URL}/member/payments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          idPackage: pkg.idPackage,
+          payment_method: paymentMethod
+        })
       });
-    }, 500);
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Gagal memproses pembayaran');
+
+      toast.success('Pesanan berhasil dibuat!');
+      setShowConfirmModal(false);
+      navigate(`/member/invoice/${data.invoice}`);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!pkg) return null; // Avoid render errors before redirect
@@ -57,9 +83,11 @@ const MemberCheckout = () => {
               <div className="flex justify-between items-end">
                 <div>
                   <h3 className="text-xl font-bold">{pkg.name}</h3>
-                  <p className="text-foreground/60 text-xs mt-0.5">{pkg.duration}</p>
+                  <p className="text-foreground/60 text-xs mt-0.5">{pkg.formattedDuration || `${pkg.duration} Bulan`}</p>
                 </div>
-                <p className="text-2xl font-black text-primary tracking-tight">{pkg.price}</p>
+                <p className="text-2xl font-black text-primary tracking-tight">
+                  {pkg.formattedPrice || `Rp ${new Intl.NumberFormat('id-ID').format(pkg.price || 0)}`}
+                </p>
               </div>
             </div>
 
@@ -152,9 +180,16 @@ const MemberCheckout = () => {
                 </button>
                 <button 
                   onClick={handleConfirmPayment}
-                  className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors"
+                  disabled={isSubmitting}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  Ya, Lanjutkan
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                    </>
+                  ) : (
+                    'Ya, Lanjutkan'
+                  )}
                 </button>
               </div>
             </motion.div>

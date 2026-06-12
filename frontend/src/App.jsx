@@ -33,6 +33,7 @@ import MemberPayments from './pages/member/Payments';
 import MemberAttendance from './pages/member/Attendance';
 
 import { AuthProvider } from './context/AuthContext';
+import { GymProvider } from './context/GymContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'sonner';
 
@@ -62,10 +63,11 @@ function App() {
 
   return (
     <Router>
-      <AuthProvider>
-        <Toaster position="top-center" richColors theme={isDarkMode ? 'dark' : 'light'} />
-        <div className="min-h-screen flex flex-col transition-colors duration-300 bg-background text-foreground">
-          <Routes>
+      <GymProvider>
+        <AuthProvider>
+          <Toaster position="top-center" richColors theme={isDarkMode ? 'dark' : 'light'} />
+          <div className="min-h-screen flex flex-col transition-colors duration-300 bg-background text-foreground">
+            <Routes>
             {/* Public Routes */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
@@ -115,7 +117,8 @@ function App() {
             </Route>
           </Routes>
         </div>
-      </AuthProvider>
+        </AuthProvider>
+      </GymProvider>
     </Router>
   );
 }

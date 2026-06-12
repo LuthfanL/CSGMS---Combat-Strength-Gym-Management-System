@@ -1,54 +1,141 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, CheckCircle2, Clock, XCircle, FileText, X, Search, Filter } from 'lucide-react';
+import { CreditCard, CheckCircle2, Clock, XCircle, FileText, X, Search, Filter, Loader2, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
+import html2pdf from 'html2pdf.js';
+
+const API_URL = 'http://localhost:8000/api';
 
 const MemberPayments = () => {
   const navigate = useNavigate();
+  const { token, user } = useAuth();
+  
+  const [payments, setPayments] = useState([]);
+  const [gymSettings, setGymSettings] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [filterMethod, setFilterMethod] = useState('Semua');
 
+  const fetchPayments = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/member/payments`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error('Gagal memuat data pembayaran');
+      const data = await res.json();
+      setPayments(data.payments);
+      setGymSettings(data.gym);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
-  }, []);
-  const payments = [
-    {
-      id: "INV-20260611-045",
-      package: "3 Bulan",
-      amount: "800.000",
-      method: "QRIS",
-      status: "Menunggu",
-      date: "11-Jun-2026, 13.40"
-    },
-    {
-      id: "INV-20260101-001",
-      package: "6 Bulan",
-      amount: "1.500.000",
-      method: "QRIS",
-      status: "Lunas",
-      date: "01-Jan-2026, 14.30"
-    },
-    {
-      id: "INV-20250701-089",
-      package: "6 Bulan",
-      amount: "1.500.000",
-      method: "Cash",
-      status: "Lunas",
-      date: "01-Jul-2025, 09.15"
-    },
-    {
-      id: "INV-20250628-012",
-      package: "1 Bulan",
-      amount: "300.000",
-      method: "QRIS",
-      status: "Dibatalkan",
-      date: "28-Jun-2025, 16.45"
-    }
-  ];
+    fetchPayments();
+  }, [token]);
+
+  const handleDownloadInvoice = () => {
+    if (!selectedInvoice) return;
+    
+    // Create a temporary element for PDF rendering
+    const element = document.createElement('div');
+    element.innerHTML = `
+      <div style="font-family: 'Inter', sans-serif; padding: 40px; color: #111; max-width: 800px; margin: 0 auto; background: white;">
+        <!-- Header Section -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #ef4444; padding-bottom: 20px; margin-bottom: 30px;">
+          <div>
+            <h1 style="color: #ef4444; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 2px; font-size: 28px; font-weight: 900;">COMBAT STRENGTH GYM</h1>
+            <p style="margin: 0; font-size: 13px; color: #666;">${gymSettings?.address || 'Jl. Raya Kebon Jeruk No. 27, Jakarta Barat'}</p>
+            <p style="margin: 0; font-size: 13px; color: #666;">Telp: ${gymSettings?.phone || '0812-3456-7890'} | ${gymSettings?.email || 'admin@combatstrength.com'}</p>
+          </div>
+          <div style="text-align: right;">
+            <h2 style="margin: 0; color: #111; font-size: 24px; text-transform: uppercase; font-weight: 900;">INVOICE</h2>
+            <p style="margin: 5px 0 0 0; font-size: 14px; font-weight: 600; color: #ef4444;">${selectedInvoice.id}</p>
+          </div>
+        </div>
+        
+        <!-- Info Section -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+          <div style="background: #f9f9f9; padding: 15px 20px; border-radius: 8px; width: 45%;">
+            <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase;">Ditagihkan Kepada:</p>
+            <h3 style="margin: 0 0 5px 0; font-size: 16px; color: #111;">${user?.name || '-'}</h3>
+            <p style="margin: 0; font-size: 13px; color: #666;">Member Combat Strength Gym</p>
+          </div>
+          <div style="width: 45%;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+              <span style="font-size: 13px; color: #666;">Tanggal Transaksi</span>
+              <span style="font-size: 13px; font-weight: bold;">${selectedInvoice.date}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+              <span style="font-size: 13px; color: #666;">Metode Pembayaran</span>
+              <span style="font-size: 13px; font-weight: bold; text-transform: uppercase;">${selectedInvoice.method}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="font-size: 13px; color: #666;">Status</span>
+              <span style="font-size: 13px; font-weight: bold; color: #10b981;">LUNAS</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Section -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+          <thead>
+            <tr style="background: #111; color: white;">
+              <th style="text-align: left; padding: 12px 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Deskripsi Paket</th>
+              <th style="text-align: right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Jumlah</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 15px; border-bottom: 1px solid #eee; font-size: 15px; font-weight: 600;">
+                ${selectedInvoice.package}
+              </td>
+              <td style="text-align: right; padding: 15px; border-bottom: 1px solid #eee; font-size: 15px; font-weight: 600;">
+                Rp ${selectedInvoice.amount},-
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Total Section -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 40px;">
+          <div style="width: 50%; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 14px; font-weight: bold; color: #666; text-transform: uppercase;">Total Pembayaran</span>
+              <span style="font-size: 24px; font-weight: 900; color: #ef4444;">Rp ${selectedInvoice.amount},-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee;">
+          <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">Terima kasih atas kepercayaan Anda!</p>
+          <p style="margin: 0; font-size: 12px; color: #666;">Invoice ini sah dan diterbitkan secara otomatis oleh sistem Combat Strength Gym.</p>
+        </div>
+      </div>
+    `;
+
+    const opt = {
+      margin:       0,
+      filename:     `Invoice_${selectedInvoice.id}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+    toast.success('Invoice sedang diunduh...');
+  };
 
   const getStatusBadge = (status) => {
     switch(status) {
@@ -137,6 +224,11 @@ const MemberPayments = () => {
       </div>
 
       {/* Table */}
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        </div>
+      ) : (
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -194,19 +286,22 @@ const MemberPayments = () => {
                           INVOICE
                         </button>
                       )}
-                    {payment.status === 'Menunggu' && (
-                      <button 
-                        onClick={() => navigate(`/member/invoice/${payment.id}`, {
-                          state: { 
-                            pkg: { name: payment.package, duration: payment.package, price: `Rp ${payment.amount}` },
-                            paymentMethod: payment.method.toLowerCase()
-                          }
-                        })}
-                        className="px-3 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg hover:bg-orange-600 transition-colors"
-                      >
-                        Bayar Sekarang
-                      </button>
-                    )}
+                      {payment.status === 'Menunggu' && (
+                        <button 
+                          onClick={() => navigate(`/member/invoice/${payment.id}`, {
+                            state: { 
+                              pkg: { name: payment.package, duration: payment.package, price: `Rp ${payment.amount}` },
+                              paymentMethod: payment.method.toLowerCase()
+                            }
+                          })}
+                          className="px-3 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg hover:bg-orange-600 transition-colors"
+                        >
+                          Bayar Sekarang
+                        </button>
+                      )}
+                      {payment.status === 'Dibatalkan' && (
+                        <span className="text-foreground/50 font-medium px-4">-</span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -223,6 +318,7 @@ const MemberPayments = () => {
           </table>
         </div>
       </motion.div>
+      )}
 
       {/* Invoice Modal */}
       {mounted && createPortal(
@@ -264,8 +360,8 @@ const MemberPayments = () => {
                     <h2 className="text-xl font-black tracking-wider text-red-500 uppercase">
                       COMBAT STRENGTH GYM
                     </h2>
-                    <p className="text-xs text-white/70">Jl. Raya Kebon Jeruk No. 27, Jakarta Barat</p>
-                    <p className="text-xs text-white/70">Telp: 0812-3456-7890 | Email: admin@combatstrength.com</p>
+                    <p className="text-xs text-white/70">{gymSettings?.address || 'Jl. Raya Kebon Jeruk No. 27, Jakarta Barat'}</p>
+                    <p className="text-xs text-white/70">Telp: {gymSettings?.phone || '0812-3456-7890'} | Email: {gymSettings?.email || 'admin@combatstrength.com'}</p>
                     <p className="text-sm font-bold pt-2">Bukti Pembayaran Lunas</p>
                   </div>
 
@@ -287,7 +383,7 @@ const MemberPayments = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-white/70">Nama Member</span>
-                      <span className="text-sm font-bold">Ahmad Faisal</span>
+                      <span className="text-sm font-bold">{user?.name || '-'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-white/70">Tipe Transaksi</span>
@@ -318,9 +414,10 @@ const MemberPayments = () => {
                 {/* Footer */}
                 <div className="p-5 border-t border-white/10 bg-white/5 flex gap-3 justify-end mt-auto">
                   <button 
-                    className="px-5 py-2 border border-white/20 font-bold rounded-xl hover:bg-white/10 transition-colors text-sm"
+                    onClick={handleDownloadInvoice}
+                    className="px-5 py-2 border border-white/20 font-bold rounded-xl hover:bg-white/10 transition-colors text-sm flex items-center gap-2"
                   >
-                    Download Invoice
+                    <Download className="w-4 h-4" /> Download PDF
                   </button>
                   <button 
                     onClick={() => setSelectedInvoice(null)}

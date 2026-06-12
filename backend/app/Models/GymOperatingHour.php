@@ -13,7 +13,8 @@ class GymOperatingHour extends Model
     protected $primaryKey = 'idOperatingHour';
     public $incrementing = false;
     protected $keyType = 'string';
-
+    
+    // Disable timestamps since migration doesn't have them
     public $timestamps = false;
 
     protected $fillable = [
@@ -28,10 +29,5 @@ class GymOperatingHour extends Model
         return [
             'is_closed' => 'boolean',
         ];
-    }
-
-    public function uniqueIds(): array
-    {
-        return ['idOperatingHour'];
     }
 }

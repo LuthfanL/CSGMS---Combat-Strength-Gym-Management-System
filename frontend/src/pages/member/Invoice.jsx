@@ -1,48 +1,65 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Download, Home, X, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Clock, Download, Home, X, CheckCircle2, ChevronRight, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
+
+const API_URL = 'http://localhost:8000/api';
 
 const PaymentInvoice = () => {
   const { id } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
+  const { token, user } = useAuth();
   
-  const pkg = location.state?.pkg;
-  const paymentMethod = location.state?.paymentMethod;
-
-  // Redirect if no state is found (accessed directly)
-  useEffect(() => {
-    if (!pkg || !paymentMethod) {
-      navigate('/member/membership');
-    }
-  }, [pkg, paymentMethod, navigate]);
-
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
+  const [payment, setPayment] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
 
-  useEffect(() => {
-    if (paymentMethod !== 'qris' || timeLeft <= 0) return;
-    
-    const timerId = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-    
-    return () => clearInterval(timerId);
-  }, [paymentMethod, timeLeft]);
-
-  if (!pkg || !paymentMethod) return null;
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const fetchPayment = async () => {
+    try {
+      const res = await fetch(`${API_URL}/member/payments/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error('Gagal memuat detail pembayaran');
+      const data = await res.json();
+      setPayment(data.payment);
+    } catch (error) {
+      toast.error(error.message);
+      navigate('/member/membership');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const currentDate = new Date().toLocaleString('id-ID', { 
+  useEffect(() => {
+    fetchPayment();
+  }, [id, token]);
+
+  useEffect(() => {
+    fetchPayment();
+  }, [id, token]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full flex justify-center items-center py-20">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!payment) return null;
+
+  const pkg = payment.package || {};
+  const paymentMethod = payment.payment_method;
+  const status = payment.status;
+
+  const currentDate = new Date(payment.created_at).toLocaleString('id-ID', { 
     day: 'numeric', month: 'short', year: 'numeric', 
     hour: '2-digit', minute: '2-digit' 
   });
+  
+  const formattedPrice = `Rp ${new Intl.NumberFormat('id-ID').format(payment.amount)}`;
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-4 pb-4">
@@ -56,10 +73,7 @@ const PaymentInvoice = () => {
           
           {paymentMethod === 'qris' ? (
             <>
-              <div className="text-3xl font-black text-primary font-mono tracking-wider">
-                {formatTime(timeLeft)}
-              </div>
-              <div className="bg-white p-2 rounded-xl shadow-inner border border-border/50 inline-block">
+              <div className="bg-white p-2 rounded-xl shadow-inner border border-border/50 inline-block mt-2">
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=CSGMS-PAY-${id}`} 
                   alt="QR Code" 
@@ -78,7 +92,7 @@ const PaymentInvoice = () => {
 
           <div>
             <p className="text-xs text-foreground/60 mb-0.5">Total Pembayaran</p>
-            <p className="text-2xl font-black">{pkg.price}</p>
+            <p className="text-2xl font-black">{formattedPrice}</p>
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 pt-2">
@@ -111,11 +125,11 @@ const PaymentInvoice = () => {
               </div>
               <div className="flex justify-between items-start border-b border-border/50 pb-1.5">
                 <span className="text-foreground/60">Nama Member</span>
-                <span className="font-medium text-right">Ahmad Faisal</span>
+                <span className="font-medium text-right">{user?.name}</span>
               </div>
               <div className="flex justify-between items-start border-b border-border/50 pb-1.5">
                 <span className="text-foreground/60">Tipe Pesanan</span>
-                <span className="font-medium text-right">Membership Gym</span>
+                <span className="font-medium text-right">{payment.payment_type === 'guest' ? 'Guest Harian' : 'Membership Gym'}</span>
               </div>
               <div className="flex justify-between items-start">
                 <span className="text-foreground/60">Metode Pembayaran</span>
@@ -138,15 +152,15 @@ const PaymentInvoice = () => {
                 </thead>
                 <tbody>
                   <tr className="border-b border-border/50">
-                    <td className="px-3 py-3 font-bold">{pkg.name}</td>
-                    <td className="px-3 py-3 text-center">{pkg.duration}</td>
-                    <td className="px-3 py-3 text-right font-medium">{pkg.price}</td>
+                    <td className="px-3 py-3 font-bold">{pkg.name || 'Paket Gym'}</td>
+                    <td className="px-3 py-3 text-center">{pkg.duration ? `${pkg.duration} Bulan` : '-'}</td>
+                    <td className="px-3 py-3 text-right font-medium">{formattedPrice}</td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr>
                     <td colSpan="2" className="px-3 py-3 font-bold text-sm">Total</td>
-                    <td className="px-3 py-3 text-right font-black text-sm text-primary">{pkg.price}</td>
+                    <td className="px-3 py-3 text-right font-black text-sm text-primary">{formattedPrice}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -216,44 +230,55 @@ const PaymentInvoice = () => {
                   
                   {/* Step 1: Menunggu Pembayaran */}
                   <div className="flex flex-col items-center bg-card px-2">
-                    <div className="w-12 h-12 rounded-full border-2 border-primary bg-primary/10 text-primary flex items-center justify-center mb-3">
+                    <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center mb-3 ${status === 'pending' ? 'border-primary bg-primary/10 text-primary' : 'border-green-500 bg-green-500/10 text-green-500'}`}>
                       <Clock className="h-5 w-5" />
                     </div>
                     <div className="text-center">
-                      <p className="font-bold text-sm">Menunggu Pembayaran</p>
+                      <p className="font-bold text-sm">Pembayaran Dibuat</p>
                       <p className="text-xs text-foreground/60 max-w-[140px] mx-auto mt-1">
-                        Silakan selesaikan transaksi Anda
+                        Selesaikan transaksi Anda
                       </p>
                     </div>
                   </div>
 
                   {/* Step 2: Status Akhir */}
                   <div className="flex flex-col items-center bg-card px-2">
-                    <div className="w-12 h-12 rounded-full border-2 border-border bg-background text-foreground/30 flex items-center justify-center mb-3">
-                      <CheckCircle2 className="h-5 w-5" />
+                    <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center mb-3 ${status === 'paid' ? 'border-green-500 bg-green-500/10 text-green-500' : status === 'cancel' ? 'border-red-500 bg-red-500/10 text-red-500' : 'border-border bg-background text-foreground/30'}`}>
+                      {status === 'cancel' ? <X className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
                     </div>
-                    <div className="text-center opacity-50">
+                    <div className={`text-center ${status === 'pending' ? 'opacity-50' : ''}`}>
                       <p className="font-bold text-sm">Status Akhir</p>
                       <p className="text-xs text-foreground/60 max-w-[140px] mx-auto mt-1">
-                        Pesanan terkonfirmasi atau hangus
+                        {status === 'paid' ? 'Pesanan berhasil terkonfirmasi' : status === 'cancel' ? 'Pesanan telah dibatalkan' : 'Pesanan terkonfirmasi atau hangus'}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 p-4 rounded-xl text-sm font-medium mb-6">
-                  ⚠️ Silakan segera lakukan pembayaran sebelum batas waktu habis agar pesanan tidak dibatalkan otomatis.
-                </div>
+                {status === 'pending' && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 p-4 rounded-xl text-sm font-medium mb-6">
+                    ⚠️ Silakan segera lakukan pembayaran sebelum batas waktu habis agar pesanan tidak dibatalkan otomatis.
+                  </div>
+                )}
+                {status === 'paid' && (
+                  <div className="bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 p-4 rounded-xl text-sm font-medium mb-6 flex justify-between items-center">
+                    <span>✅ Pembayaran Anda telah dikonfirmasi!</span>
+                    <Link to="/member/dashboard" className="underline font-bold text-green-700 dark:text-green-300">Ke Dashboard</Link>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center border-t border-border/50 pt-6">
                   <div className="flex gap-4 items-center">
                     <p className="text-sm text-foreground/60">Dipesan: {currentDate}</p>
-                    <span className="px-3 py-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold rounded-full">
-                      Belum Dibayar
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full ${status === 'paid' ? 'bg-green-500/10 text-green-500' : status === 'cancel' ? 'bg-red-500/10 text-red-500' : 'bg-orange-500/10 text-orange-500'}`}>
+                      {status === 'paid' ? 'Lunas' : status === 'cancel' ? 'Dibatalkan' : 'Belum Dibayar'}
                     </span>
                   </div>
                   <button 
-                    onClick={() => setShowStatusModal(false)}
+                    onClick={() => {
+                      setShowStatusModal(false);
+                      fetchPayment(); // Refresh just in case
+                    }}
                     className="px-6 py-2.5 bg-foreground text-background font-bold rounded-xl hover:bg-foreground/90 transition-all text-sm"
                   >
                     Tutup

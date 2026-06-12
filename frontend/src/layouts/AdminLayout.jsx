@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useGym } from '../context/GymContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -24,6 +25,7 @@ const AdminLayout = ({ toggleTheme, isDarkMode }) => {
   const [mounted, setMounted] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { gymSettings } = useGym();
 
   useEffect(() => {
     setMounted(true);
@@ -60,7 +62,11 @@ const AdminLayout = ({ toggleTheme, isDarkMode }) => {
         {/* Mobile Header Bar */}
         <div className="bg-card border-b border-border h-16 flex items-center justify-between px-4 shadow-sm">
           <div className="flex items-center gap-2">
-            <Dumbbell className="h-6 w-6 text-primary" />
+            {gymSettings?.logo ? (
+              <img src={`http://localhost:8000/storage/${gymSettings.logo}`} alt="Logo" className="w-6 h-6 object-contain" />
+            ) : (
+              <Dumbbell className="h-6 w-6 text-primary" />
+            )}
             <span className="font-bold tracking-wider">CSGMS</span>
           </div>
           <div className="flex items-center gap-2">
@@ -127,7 +133,11 @@ const AdminLayout = ({ toggleTheme, isDarkMode }) => {
       <div className="hidden md:flex sticky top-0 left-0 z-40 h-screen w-64 bg-card border-r border-border flex-col">
         {/* Sidebar Header (Desktop) */}
         <div className="flex h-16 items-center gap-2 px-6 border-b border-border shadow-sm">
-          <Dumbbell className="h-8 w-8 text-primary" />
+          {gymSettings?.logo ? (
+            <img src={`http://localhost:8000/storage/${gymSettings.logo}`} alt="Logo" className="w-8 h-8 object-contain" />
+          ) : (
+            <Dumbbell className="h-8 w-8 text-primary" />
+          )}
           <span className="font-bold text-xl tracking-wider">CSGMS</span>
         </div>
 

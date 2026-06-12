@@ -1,21 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, CheckCircle2, XCircle, FileText, X } from 'lucide-react';
+import { Search, CheckCircle2, XCircle, FileText, X, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
-const dummyPayments = [
-  { id: 1, invoice: "INV-101", date: "Hari Ini, 14:30", member: "Budi Santoso", code: "MBR-00123", type: "Perpanjangan (1 Bulan)", method: "QRIS", amount: "150000", status: "Menunggu" },
-  { id: 2, invoice: "INV-100", date: "Hari Ini, 10:15", member: "Siti Aminah", code: "Guest", type: "Guest Harian", method: "Cash", amount: "50000", status: "Lunas" },
-  { id: 3, invoice: "INV-099", date: "Hari Ini, 09:00", member: "Joko Widodo", code: "MBR-00125", type: "Pendaftaran", method: "Cash", amount: "250000", status: "Dibatalkan" },
-  { id: 4, invoice: "INV-098", date: "Kemarin, 16:20", member: "Agus Salim", code: "MBR-00110", type: "Paket 3 Bulan", method: "QRIS", amount: "400000", status: "Lunas" },
-  { id: 5, invoice: "INV-097", date: "26 Okt 2023, 09:00", member: "Dewi Lestari", code: "MBR-00095", type: "Paket 1 Tahun", method: "Cash", amount: "1400000", status: "Dibatalkan" }
-];
+const API_URL = 'http://localhost:8000/api';
 
 const Payments = () => {
+  const { token } = useAuth();
+  const [payments, setPayments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [activeTab, setActiveTab] = useState('hari-ini');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchPayments = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/admin/payments`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error('Gagal memuat data pembayaran');
+      const data = await res.json();
+      setPayments(data.payments);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPayments();
+  }, [token]);
 
   const formatRupiah = (number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
@@ -49,8 +71,20 @@ const Payments = () => {
     setTimeout(() => setSelectedPayment(null), 300);
   };
 
-  const todayPayments = dummyPayments.filter(p => p.date.includes("Hari Ini"));
-  const historyPayments = dummyPayments.filter(p => p.status === "Lunas" || p.status === "Dibatalkan");
+  const todayPayments = payments.filter(p => {
+    if (!p.created_at) return false;
+    const paymentDate = new Date(p.created_at).toDateString();
+    const today = new Date().toDateString();
+    return paymentDate === today;
+  });
+  let historyPayments = payments.filter(p => p.status === "Lunas" || p.status === "Dibatalkan");
+  
+  if (searchQuery) {
+    historyPayments = historyPayments.filter(p => 
+      p.invoice.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      p.member.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
 
   const renderTableRows = (payments) => {
     return payments.map((payment) => (
@@ -259,8 +293,28 @@ const Payments = () => {
               <button onClick={closeModal} className="px-4 py-2 bg-background border border-border text-foreground hover:bg-border/50 rounded-lg text-sm font-medium transition-colors">
                 Kembali
               </button>
-              <button onClick={() => { alert(`Pembayaran ${selectedPayment.invoice} berhasil dikonfirmasi!`); closeModal(); }} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-[0_0_10px_rgba(34,197,94,0.3)]">
-                Ya, Konfirmasi Lunas
+              <button 
+                onClick={async () => { 
+                  setIsSubmitting(true);
+                  try {
+                    const res = await fetch(`${API_URL}/admin/payments/${selectedPayment.id}/confirm`, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                    });
+                    if (!res.ok) throw new Error('Gagal konfirmasi');
+                    toast.success(`Pembayaran ${selectedPayment.invoice} berhasil dikonfirmasi!`);
+                    closeModal();
+                    fetchPayments();
+                  } catch (e) {
+                    toast.error(e.message);
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }} 
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-[0_0_10px_rgba(34,197,94,0.3)] disabled:opacity-50"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ya, Konfirmasi Lunas'}
               </button>
             </div>
           </div>
@@ -293,8 +347,28 @@ const Payments = () => {
               <button onClick={closeModal} className="px-4 py-2 bg-background border border-border text-foreground hover:bg-border/50 rounded-lg text-sm font-medium transition-colors">
                 Kembali
               </button>
-              <button onClick={() => { alert(`Pembayaran ${selectedPayment.invoice} dibatalkan!`); closeModal(); }} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-[0_0_10px_rgba(255,42,42,0.3)]">
-                Ya, Batalkan Transaksi
+              <button 
+                onClick={async () => { 
+                  setIsSubmitting(true);
+                  try {
+                    const res = await fetch(`${API_URL}/admin/payments/${selectedPayment.id}/cancel`, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                    });
+                    if (!res.ok) throw new Error('Gagal membatalkan');
+                    toast.success(`Pembayaran ${selectedPayment.invoice} dibatalkan!`);
+                    closeModal();
+                    fetchPayments();
+                  } catch (e) {
+                    toast.error(e.message);
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }} 
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-[0_0_10px_rgba(255,42,42,0.3)] disabled:opacity-50"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ya, Batalkan Transaksi'}
               </button>
             </div>
           </div>
