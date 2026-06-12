@@ -18,7 +18,7 @@ class MemberController extends Controller
     {
         $query = Member::with(['user' => function ($q) {
             $q->select('idUser', 'name', 'email', 'phone', 'address', 'is_active', 'created_at');
-        }]);
+        }, 'activeMembership', 'memberships']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -34,15 +34,18 @@ class MemberController extends Controller
             if ($status === 'aktif') {
                 $query->whereHas('user', function ($q) {
                     $q->where('is_active', true);
-                })->where('membership_status', 'Aktif');
+                })->whereHas('activeMembership');
             } elseif ($status === 'nonaktif') {
                 $query->whereHas('user', function ($q) {
                     $q->where('is_active', false);
                 });
             } elseif ($status === 'expired') {
-                $query->where('membership_status', 'Expired');
+                $query->whereDoesntHave('activeMembership')
+                      ->whereHas('memberships', function ($q) {
+                          $q->where('end_date', '<', now()->toDateString());
+                      });
             } elseif ($status === 'belum_aktif') {
-                $query->where('membership_status', 'Belum Aktif');
+                $query->whereDoesntHave('memberships');
             }
         }
 

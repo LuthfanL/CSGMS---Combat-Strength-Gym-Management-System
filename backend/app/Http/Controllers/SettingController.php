@@ -82,10 +82,57 @@ class SettingController extends Controller
             }
         }
 
+        \App\Models\AuditLog::create([
+            'idUser' => $request->user()->idUser,
+            'action' => 'update',
+            'module' => 'setting',
+            'description' => 'Mengubah Pengaturan Gym dan Jam Operasional'
+        ]);
+
         return response()->json([
             'message' => 'Settings updated successfully',
             'settings' => $settings,
             'operating_hours' => GymOperatingHour::orderByRaw("FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')")->get()
+        ]);
+    }
+
+    /**
+     * Update guest price (Admin).
+     * POST /api/admin/settings/guest-price
+     */
+    public function updateGuestPrice(Request $request)
+    {
+        $request->validate([
+            'guest_price' => 'required|integer|min:0'
+        ]);
+
+        $settings = GymSetting::first();
+        if (!$settings) {
+            $settings = new GymSetting();
+            $settings->idGym = Str::uuid();
+            $settings->gym_name = 'Gym Baru';
+            $settings->description = '-';
+            $settings->address = '-';
+            $settings->phone = '-';
+            $settings->email = '-';
+        }
+
+        $oldPrice = $settings->guest_price;
+        $settings->guest_price = $request->input('guest_price');
+        $settings->save();
+
+        \App\Models\AuditLog::create([
+            'idUser' => $request->user()->idUser,
+            'action' => 'update',
+            'module' => 'setting',
+            'description' => "Mengubah Harga Guest Harian dari {$oldPrice} menjadi {$settings->guest_price}",
+            'old_data' => ['guest_price' => $oldPrice],
+            'new_data' => ['guest_price' => $settings->guest_price],
+        ]);
+
+        return response()->json([
+            'message' => 'Harga guest harian berhasil diperbarui.',
+            'guest_price' => $settings->guest_price
         ]);
     }
 }

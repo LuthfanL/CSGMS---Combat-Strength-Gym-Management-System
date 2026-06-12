@@ -12,6 +12,11 @@ const Packages = () => {
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  const [guestPrice, setGuestPrice] = useState('');
+  const [isEditingGuestPrice, setIsEditingGuestPrice] = useState(false);
+  const [guestPriceInput, setGuestPriceInput] = useState('');
+  const [isSavingGuestPrice, setIsSavingGuestPrice] = useState(false);
+
   const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, data: null });
 
   const fetchPackages = useCallback(async () => {
@@ -28,6 +33,12 @@ const Packages = () => {
 
       const data = await res.json();
       setPackages(data);
+
+      const settingsRes = await fetch(`${API_URL}/settings`);
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        setGuestPrice(settingsData.settings?.guest_price || 15000);
+      }
     } catch {
       toast.error('Gagal memuat data paket membership.');
     } finally {
@@ -64,6 +75,88 @@ const Packages = () => {
           <Plus className="w-4 h-4" />
           Tambah Paket
         </button>
+      </div>
+
+      {/* --- PENGATURAN HARGA GUEST --- */}
+      <div className="bg-card rounded-xl border border-border shadow-sm p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-bold text-foreground">Harga Guest Harian</h2>
+          <p className="text-xs text-foreground/70">Harga yang akan dikenakan untuk setiap check-in guest harian.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {isEditingGuestPrice ? (
+            <>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-sm text-foreground/50 font-medium">Rp</span>
+                <input 
+                  type="text" 
+                  value={guestPriceInput}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/[^0-9]/g, '');
+                    setGuestPriceInput(formatRupiahCustom(rawValue).replace(',-', ''));
+                  }}
+                  className="pl-9 pr-3 py-1.5 bg-background border border-border rounded-lg text-sm w-32 focus:ring-primary focus:border-primary text-foreground transition-colors font-medium"
+                />
+              </div>
+              <button 
+                onClick={async () => {
+                  setIsSavingGuestPrice(true);
+                  try {
+                    const rawPrice = parseInt(guestPriceInput.replace(/\./g, ''), 10);
+                    const res = await fetch(`${API_URL}/admin/settings/guest-price`, {
+                      method: 'POST',
+                      headers: { 
+                        'Authorization': `Bearer ${token}`, 
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({ guest_price: rawPrice })
+                    });
+                    if (!res.ok) throw new Error('Gagal menyimpan harga');
+                    const data = await res.json();
+                    setGuestPrice(data.guest_price);
+                    setIsEditingGuestPrice(false);
+                    toast.success('Harga Guest Harian berhasil diperbarui!');
+                  } catch (e) {
+                    toast.error(e.message);
+                  } finally {
+                    setIsSavingGuestPrice(false);
+                  }
+                }}
+                disabled={isSavingGuestPrice}
+                className="px-3 py-1.5 bg-green-500/10 text-green-500 hover:bg-green-500/20 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 h-[34px]"
+                title="Simpan"
+              >
+                {isSavingGuestPrice ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                Simpan
+              </button>
+              <button 
+                onClick={() => setIsEditingGuestPrice(false)}
+                disabled={isSavingGuestPrice}
+                className="px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 h-[34px]"
+                title="Batal"
+              >
+                <X className="w-4 h-4" />
+                Batal
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="px-4 py-1.5 bg-foreground/5 border border-border rounded-lg text-sm font-bold text-primary flex items-center h-[34px]">
+                Rp {formatRupiahCustom(guestPrice)}
+              </div>
+              <button 
+                onClick={() => {
+                  setGuestPriceInput(formatRupiahCustom(guestPrice).replace(',-', ''));
+                  setIsEditingGuestPrice(true);
+                }}
+                className="px-3 py-1.5 bg-background border border-border text-foreground hover:bg-border/50 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors h-[34px]"
+              >
+                <Edit className="w-4 h-4" /> Ubah Harga
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="bg-card rounded-xl border border-border shadow-sm flex flex-col">

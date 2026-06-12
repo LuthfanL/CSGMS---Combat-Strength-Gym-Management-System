@@ -22,6 +22,7 @@ import AdminGuest from './pages/admin/Guest';
 import AdminMembers from './pages/admin/Members';
 import AdminPackages from './pages/admin/Packages';
 import AdminPayments from './pages/admin/Payments';
+import AdminAttendance from './pages/admin/Attendance';
 
 // Member Pages
 import MemberLayout from './layouts/MemberLayout';
@@ -100,6 +101,7 @@ function App() {
               <Route path="members" element={<AdminMembers />} />
               <Route path="packages" element={<AdminPackages />} />
               <Route path="payments" element={<AdminPayments />} />
+              <Route path="attendance" element={<AdminAttendance />} />
             </Route>
 
             {/* Member Dashboard Routes */}

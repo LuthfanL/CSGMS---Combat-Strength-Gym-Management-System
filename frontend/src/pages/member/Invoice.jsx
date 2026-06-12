@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Download, Home, X, CheckCircle2, ChevronRight, Loader2 } from 'lucide-react';
+import { Clock, Download, Home, X, CheckCircle2, XCircle, ChevronRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
@@ -15,8 +16,10 @@ const PaymentInvoice = () => {
   const [payment, setPayment] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const fetchPayment = async () => {
+  const fetchPayment = async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/member/payments/${id}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
@@ -25,19 +28,25 @@ const PaymentInvoice = () => {
       const data = await res.json();
       setPayment(data.payment);
     } catch (error) {
-      toast.error(error.message);
-      navigate('/member/membership');
+      if (!isBackground) {
+        toast.error(error.message);
+        navigate('/member/membership');
+      }
     } finally {
-      setIsLoading(false);
+      if (!isBackground) setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    setMounted(true);
     fetchPayment();
-  }, [id, token]);
 
-  useEffect(() => {
-    fetchPayment();
+    // Auto refresh every 5 seconds to check if admin confirmed
+    const intervalId = setInterval(() => {
+      fetchPayment(true);
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, [id, token]);
 
   if (isLoading) {
@@ -67,25 +76,45 @@ const PaymentInvoice = () => {
       <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row items-center p-4 gap-6">
         <div className="flex-1 flex flex-col items-center text-center space-y-3">
           <h1 className="text-lg font-bold tracking-tight">
-            Pembayaran {paymentMethod.toUpperCase()}
+            Pembayaran {(paymentMethod || '').toUpperCase()}
           </h1>
-          <p className="text-foreground/70 font-medium text-sm">Selesaikan pembayaran</p>
+          <p className="text-foreground/70 font-medium text-sm">
+            {status === 'paid' ? 'Pembayaran Selesai' : status === 'cancel' ? 'Pembayaran Dibatalkan' : 'Selesaikan pembayaran'}
+          </p>
           
-          {paymentMethod === 'qris' ? (
-            <>
-              <div className="bg-white p-2 rounded-xl shadow-inner border border-border/50 inline-block mt-2">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=CSGMS-PAY-${id}`} 
-                  alt="QR Code" 
-                  className="w-32 h-32"
-                />
+          {status === 'pending' ? (
+            paymentMethod === 'qris' ? (
+              <>
+                <div className="bg-white p-2 rounded-xl shadow-inner border border-border/50 inline-block mt-2">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=CSGMS-PAY-${id}`} 
+                    alt="QR Code" 
+                    className="w-32 h-32"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="py-4 px-4 bg-primary/5 rounded-xl border border-primary/20 max-w-sm">
+                <p className="font-bold mb-1">Segera ke Resepsionis!</p>
+                <p className="text-xs text-foreground/70">
+                  Tunjukkan nomor pesanan ini kepada staf kami di meja resepsionis untuk melakukan pembayaran secara tunai.
+                </p>
               </div>
-            </>
+            )
+          ) : status === 'paid' ? (
+            <div className="py-6 px-4 bg-green-500/10 rounded-xl border border-green-500/20 max-w-sm text-center">
+              <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-2" />
+              <p className="font-bold text-green-600 dark:text-green-400 mb-1">Terima Kasih!</p>
+              <p className="text-xs text-green-600/80 dark:text-green-400/80">
+                Pembayaran Anda telah berhasil kami terima.
+              </p>
+            </div>
           ) : (
-            <div className="py-4 px-4 bg-primary/5 rounded-xl border border-primary/20 max-w-sm">
-              <p className="font-bold mb-1">Segera ke Resepsionis!</p>
-              <p className="text-xs text-foreground/70">
-                Tunjukkan nomor pesanan ini kepada staf kami di meja resepsionis untuk melakukan pembayaran secara tunai.
+            <div className="py-6 px-4 bg-red-500/10 rounded-xl border border-red-500/20 max-w-sm text-center">
+              <XCircle className="w-12 h-12 text-red-500 mx-auto mb-2" />
+              <p className="font-bold text-red-600 dark:text-red-400 mb-1">Pesanan Dibatalkan</p>
+              <p className="text-xs text-red-600/80 dark:text-red-400/80">
+                Waktu pembayaran habis atau pesanan dibatalkan oleh kasir.
               </p>
             </div>
           )}
@@ -100,9 +129,9 @@ const PaymentInvoice = () => {
               onClick={() => setShowStatusModal(true)}
               className="px-5 py-2 bg-foreground text-background font-bold rounded-full hover:bg-foreground/90 transition-all text-xs"
             >
-              Cek Status Pembayaran
+              {status === 'pending' ? 'Cek Status Pembayaran' : 'Lihat Detail Status'}
             </button>
-            {paymentMethod === 'qris' && (
+            {paymentMethod === 'qris' && status === 'pending' && (
               <button className="px-5 py-2 border border-border font-bold rounded-full hover:bg-foreground/5 transition-all text-xs">
                 Unduh
               </button>
@@ -170,10 +199,11 @@ const PaymentInvoice = () => {
       </div>
 
       {/* Cara Pembayaran (Moved to bottom to save vertical space on QR area) */}
-      <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
-        <h3 className="font-bold text-base mb-2">
-          Cara Pembayaran {paymentMethod.toUpperCase()}
-        </h3>
+      {status === 'pending' && (
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+          <h3 className="font-bold text-base mb-2">
+            Cara Pembayaran {(paymentMethod || '').toUpperCase()}
+          </h3>
         {paymentMethod === 'qris' ? (
           <ol className="list-decimal list-outside ml-4 space-y-1.5 text-xs text-foreground/70">
             <li>Klik <strong className="text-foreground">Unduh</strong> untuk menyimpan gambar / screenshot kode QRIS.</li>
@@ -192,11 +222,13 @@ const PaymentInvoice = () => {
           </ol>
         )}
       </div>
+      )}
 
       {/* Cek Status Modal */}
-      <AnimatePresence>
-        {showStatusModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {mounted && createPortal(
+        <AnimatePresence>
+          {showStatusModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -218,7 +250,9 @@ const PaymentInvoice = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-foreground/60">Status Pembayaran</p>
-                  <p className="font-bold text-orange-500">Pending</p>
+                  <p className={`font-bold ${status === 'paid' ? 'text-green-500' : status === 'cancel' ? 'text-red-500' : 'text-orange-500'}`}>
+                    {status === 'paid' ? 'Lunas' : status === 'cancel' ? 'Dibatalkan' : 'Menunggu'}
+                  </p>
                 </div>
               </div>
               
@@ -288,7 +322,9 @@ const PaymentInvoice = () => {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
     </div>
   );
 };

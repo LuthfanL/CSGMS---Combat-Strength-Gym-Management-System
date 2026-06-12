@@ -22,8 +22,8 @@ const MemberPayments = () => {
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [filterMethod, setFilterMethod] = useState('Semua');
 
-  const fetchPayments = async () => {
-    setIsLoading(true);
+  const fetchPayments = async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/member/payments`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
@@ -33,15 +33,21 @@ const MemberPayments = () => {
       setPayments(data.payments);
       setGymSettings(data.gym);
     } catch (error) {
-      toast.error(error.message);
+      if (!isBackground) toast.error(error.message);
     } finally {
-      setIsLoading(false);
+      if (!isBackground) setIsLoading(false);
     }
   };
 
   useEffect(() => {
     setMounted(true);
     fetchPayments();
+    
+    const intervalId = setInterval(() => {
+      fetchPayments(true);
+    }, 5000);
+    
+    return () => clearInterval(intervalId);
   }, [token]);
 
   const handleDownloadInvoice = () => {
@@ -337,70 +343,70 @@ const MemberPayments = () => {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-[#111] text-white w-full max-w-md rounded-2xl shadow-2xl border border-white/10 overflow-hidden flex flex-col"
+                className="relative bg-card text-foreground w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col"
               >
                 {/* Header */}
-                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <div className="p-4 border-b border-border flex justify-between items-center bg-foreground/5">
                   <div className="flex items-center gap-2 text-red-500">
                     <FileText className="h-5 w-5" />
-                    <h3 className="text-lg font-bold text-white">Detail Invoice</h3>
+                    <h3 className="text-lg font-bold">Detail Invoice</h3>
                   </div>
                   <button 
                     onClick={() => setSelectedInvoice(null)}
-                    className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-1.5 hover:bg-foreground/10 rounded-full transition-colors"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
                 
                 {/* Body */}
-                <div className="p-6 space-y-6">
+                <div className="p-5 space-y-4">
                   {/* Company Info */}
                   <div className="text-center space-y-1">
                     <h2 className="text-xl font-black tracking-wider text-red-500 uppercase">
                       COMBAT STRENGTH GYM
                     </h2>
-                    <p className="text-xs text-white/70">{gymSettings?.address || 'Jl. Raya Kebon Jeruk No. 27, Jakarta Barat'}</p>
-                    <p className="text-xs text-white/70">Telp: {gymSettings?.phone || '0812-3456-7890'} | Email: {gymSettings?.email || 'admin@combatstrength.com'}</p>
+                    <p className="text-xs text-foreground/70">{gymSettings?.address || 'Jl. Raya Kebon Jeruk No. 27, Jakarta Barat'}</p>
+                    <p className="text-xs text-foreground/70">Telp: {gymSettings?.phone || '0812-3456-7890'} | Email: {gymSettings?.email || 'admin@combatstrength.com'}</p>
                     <p className="text-sm font-bold pt-2">Bukti Pembayaran Lunas</p>
                   </div>
 
                   {/* Invoice Date & Number */}
-                  <div className="flex justify-between items-start pt-2">
+                  <div className="flex justify-between items-start pt-1">
                     <div>
-                      <p className="text-[10px] font-bold text-white/70 uppercase mb-1">Nomor Invoice</p>
+                      <p className="text-[10px] font-bold text-foreground/70 uppercase mb-1">Nomor Invoice</p>
                       <p className="text-lg font-bold">{selectedInvoice.id}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-bold text-white/70 uppercase mb-1">Tanggal</p>
+                      <p className="text-[10px] font-bold text-foreground/70 uppercase mb-1">Tanggal</p>
                       <p className="text-sm">{selectedInvoice.date}</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-dashed border-white/20"></div>
+                  <div className="border-t border-dashed border-border/50"></div>
 
                   {/* Details */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-white/70">Nama Member</span>
+                      <span className="text-sm text-foreground/70">Nama Member</span>
                       <span className="text-sm font-bold">{user?.name || '-'}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-white/70">Tipe Transaksi</span>
+                      <span className="text-sm text-foreground/70">Tipe Transaksi</span>
                       <span className="text-sm font-bold">{selectedInvoice.package}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-white/70">Metode Pembayaran</span>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-md border border-white/20 bg-white/5 uppercase">
+                      <span className="text-sm text-foreground/70">Metode Pembayaran</span>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-md border border-border bg-foreground/5 uppercase">
                         {selectedInvoice.method}
                       </span>
                     </div>
                   </div>
 
                   {/* Total Box */}
-                  <div className="border border-white/20 rounded-xl p-4 flex justify-between items-center bg-white/5">
-                    <span className="font-bold">Total Pembayaran</span>
-                    <span className="text-xl font-bold text-red-500">Rp {selectedInvoice.amount},-</span>
+                  <div className="border border-border rounded-xl p-3.5 flex justify-between items-center bg-foreground/5 mt-2">
+                    <span className="font-bold text-sm">Total Pembayaran</span>
+                    <span className="text-lg font-bold text-red-500">Rp {selectedInvoice.amount},-</span>
                   </div>
 
                   {/* Lunas Badge */}
@@ -412,10 +418,10 @@ const MemberPayments = () => {
                 </div>
 
                 {/* Footer */}
-                <div className="p-5 border-t border-white/10 bg-white/5 flex gap-3 justify-end mt-auto">
+                <div className="p-4 border-t border-border bg-foreground/5 flex gap-3 justify-end mt-auto">
                   <button 
                     onClick={handleDownloadInvoice}
-                    className="px-5 py-2 border border-white/20 font-bold rounded-xl hover:bg-white/10 transition-colors text-sm flex items-center gap-2"
+                    className="px-5 py-2 border border-border font-bold rounded-xl hover:bg-foreground/5 transition-colors text-sm flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" /> Download PDF
                   </button>

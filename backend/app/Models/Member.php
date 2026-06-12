@@ -25,6 +25,30 @@ class Member extends Model
         return ['idMember'];
     }
 
+    protected $appends = ['membership_status', 'end_date'];
+
+    public function getMembershipStatusAttribute()
+    {
+        if ($this->activeMembership) {
+            return 'Aktif';
+        }
+
+        $hasPastMembership = $this->memberships()
+            ->where('end_date', '<', now()->toDateString())
+            ->exists();
+
+        if ($hasPastMembership) {
+            return 'Expired';
+        }
+
+        return 'Belum Aktif';
+    }
+
+    public function getEndDateAttribute()
+    {
+        return $this->activeMembership ? $this->activeMembership->end_date : null;
+    }
+
     // ---- Relationships ----
 
     public function user()
@@ -42,6 +66,13 @@ class Member extends Model
         return $this->hasOne(Membership::class, 'idMember', 'idMember')
             ->where('end_date', '>=', now()->toDateString())
             ->latest('end_date');
+    }
+
+    public function activeMemberships()
+    {
+        return $this->hasMany(Membership::class, 'idMember', 'idMember')
+            ->where('end_date', '>=', now()->toDateString())
+            ->orderBy('start_date', 'asc');
     }
 
     public function payments()

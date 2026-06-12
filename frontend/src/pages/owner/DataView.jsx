@@ -2,72 +2,12 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, Eye, X, Phone, Mail, MapPin, Calendar, FileSpreadsheet, Download } from 'lucide-react';
 
-const dummyMembers = [
-  {
-    id: 1,
-    name: "Budi Santoso",
-    code: "CSG-00123",
-    phone: "081234567890",
-    email: "budi@example.com",
-    address: "Jl. Sudirman No. 12, Jakarta",
-    status: "Aktif",
-    expired: "15-Nov-2026",
-    joinDate: "15-Nov-2025"
-  },
-  {
-    id: 2,
-    name: "Siti Aminah",
-    code: "CSG-00124",
-    phone: "089876543210",
-    email: "siti@example.com",
-    address: "Jl. Thamrin No. 99, Jakarta Selatan",
-    status: "Expired",
-    expired: "01-Oct-2026",
-    joinDate: "01-Oct-2025"
-  }
-];
+// Dummy data removed. Using real APIs.
 
-const dummyTransactions = [
-  {
-    id: 1,
-    invoice: "INV-231027-001",
-    date: "27-Oct-2026",
-    member: "Budi Santoso",
-    method: "QRIS",
-    status: "Lunas",
-    amount: "250000"
-  },
-  {
-    id: 2,
-    invoice: "INV-231027-003",
-    date: "27-Oct-2026",
-    member: "Bambang (Guest)",
-    method: "Cash",
-    status: "Menunggu",
-    amount: "35000"
-  }
-];
-
-const dummyAttendances = [
-  {
-    id: 1,
-    time: "27-Oct-2026, 08:15:22",
-    type: "Member",
-    name: "Budi Santoso",
-    code: "CSG-00123",
-    phone: "081234567890"
-  },
-  {
-    id: 2,
-    time: "27-Oct-2026, 09:30:05",
-    type: "Guest",
-    name: "Andi Hidayat",
-    code: "-",
-    phone: "081234567890"
-  }
-];
+import { useAuth } from '../../context/AuthContext';
 
 const DataView = () => {
+  const { token } = useAuth();
   useEffect(() => {
     document.title = "Data Master Operasional - CSGMS";
   }, []);
@@ -77,53 +17,102 @@ const DataView = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
-  // States for members
-  const [members, setMembers] = useState([]);
+  // States for general listing
+  const [dataList, setDataList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch members
+  // States specific to transactions
+  const [trxPeriod, setTrxPeriod] = useState('');
+  const [trxMethod, setTrxMethod] = useState('');
+
+  // States specific to attendances
+  const [attStartDate, setAttStartDate] = useState('');
+  const [attEndDate, setAttEndDate] = useState('');
+  const [attType, setAttType] = useState('');
+
+  // Handle tab change synchronously to prevent render crashes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setPage(1);
+    setSearch('');
+    setStatus('');
+    setTrxPeriod('');
+    setTrxMethod('');
+    setAttStartDate('');
+    setAttEndDate('');
+    setAttType('');
+    setDataList([]);
+  };
+
+  // Fetch data
   useEffect(() => {
-    if (activeTab !== 'members') return;
-    
-    const fetchMembers = async () => {
-      setIsLoading(true);
+    const fetchData = async (isBackground = false) => {
+      if (!isBackground) setIsLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`http://localhost:8000/api/owner/members?page=${page}&search=${search}&status=${status}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        let endpoint = '';
+        const params = new URLSearchParams({ page });
+
+        if (search) params.append('search', search);
+
+        if (activeTab === 'members') {
+          endpoint = '/api/owner/members';
+          if (status) params.append('status', status);
+        } else if (activeTab === 'transactions') {
+          endpoint = '/api/owner/payments';
+          if (status) params.append('status', status);
+          if (trxPeriod) params.append('period', trxPeriod);
+          if (trxMethod) params.append('method', trxMethod);
+        } else if (activeTab === 'attendances') {
+          endpoint = '/api/owner/attendances';
+          if (attType) params.append('type', attType);
+          if (attStartDate) params.append('start_date', attStartDate);
+          if (attEndDate) params.append('end_date', attEndDate);
+        }
+
+        const res = await fetch(`http://localhost:8000${endpoint}?${params.toString()}`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
           }
         });
+        
         if (res.ok) {
-          const data = await res.json();
-          setMembers(data.data);
-          setTotalPages(data.last_page);
+          const resData = await res.json();
+          setDataList(resData.data);
+          setTotalPages(resData.last_page);
         }
       } catch (err) {
-        console.error('Failed to fetch members:', err);
+        console.error('Failed to fetch data:', err);
       } finally {
-        setIsLoading(false);
+        if (!isBackground) setIsLoading(false);
       }
     };
 
     // Debounce search
     const timer = setTimeout(() => {
-      fetchMembers();
+      fetchData();
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [activeTab, page, search, status]);
+    const intervalId = setInterval(() => {
+      if (!isViewModalOpen && !isExportModalOpen) fetchData(true);
+    }, 5000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(intervalId);
+    };
+  }, [activeTab, page, search, status, trxPeriod, trxMethod, attStartDate, attEndDate, attType, isViewModalOpen, isExportModalOpen, token]);
 
   const handleView = async (member) => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`http://localhost:8000/api/owner/members/${member.idMember}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
         }
       });
       if (res.ok) {
@@ -168,7 +157,7 @@ const DataView = () => {
       <div className="border-b border-border">
         <nav className="flex space-x-4 sm:space-x-6 overflow-x-auto">
           <button
-            onClick={() => setActiveTab('members')}
+            onClick={() => handleTabChange('members')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
               activeTab === 'members' 
               ? 'border-primary text-primary' 
@@ -178,7 +167,7 @@ const DataView = () => {
             Data Member
           </button>
           <button
-            onClick={() => setActiveTab('transactions')}
+            onClick={() => handleTabChange('transactions')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
               activeTab === 'transactions' 
               ? 'border-primary text-primary' 
@@ -188,7 +177,7 @@ const DataView = () => {
             Data Transaksi
           </button>
           <button
-            onClick={() => setActiveTab('attendances')}
+            onClick={() => handleTabChange('attendances')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
               activeTab === 'attendances' 
               ? 'border-primary text-primary' 
@@ -207,8 +196,8 @@ const DataView = () => {
           <input 
             type="text" 
             placeholder={`Cari data ${activeTab}...`} 
-            value={activeTab === 'members' ? search : ''}
-            onChange={(e) => activeTab === 'members' && setSearch(e.target.value)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm w-full focus:ring-primary focus:border-primary text-foreground shadow-sm transition-colors"
           />
         </div>
@@ -216,21 +205,21 @@ const DataView = () => {
           {activeTab === 'attendances' && (
             <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-2 py-1 shadow-sm">
               <span className="text-xs text-foreground/70 font-medium">Dari:</span>
-              <input type="date" className="bg-transparent border-none p-1 text-sm text-foreground focus:ring-0 w-32 outline-none dark:[color-scheme:dark]" />
+              <input type="date" value={attStartDate} onChange={e => setAttStartDate(e.target.value)} className="bg-transparent border-none p-1 text-sm text-foreground focus:ring-0 w-32 outline-none dark:[color-scheme:dark]" />
               <span className="text-xs text-foreground/70 font-medium border-l border-border pl-2">Sampai:</span>
-              <input type="date" className="bg-transparent border-none p-1 text-sm text-foreground focus:ring-0 w-32 outline-none dark:[color-scheme:dark]" />
+              <input type="date" value={attEndDate} onChange={e => setAttEndDate(e.target.value)} className="bg-transparent border-none p-1 text-sm text-foreground focus:ring-0 w-32 outline-none dark:[color-scheme:dark]" />
             </div>
           )}
           {activeTab === 'transactions' && (
             <>
-              <select className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-primary focus:border-primary transition-colors shadow-sm w-full sm:w-auto">
+              <select value={trxPeriod} onChange={e => setTrxPeriod(e.target.value)} className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-primary focus:border-primary transition-colors shadow-sm w-full sm:w-auto">
                 <option value="">Bulan Ini</option>
                 <option value="today">Hari Ini</option>
                 <option value="week">Minggu Ini</option>
                 <option value="year">Tahun Ini</option>
                 <option value="all">Semua Waktu</option>
               </select>
-              <select className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-primary focus:border-primary transition-colors shadow-sm w-full sm:w-auto">
+              <select value={trxMethod} onChange={e => setTrxMethod(e.target.value)} className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-primary focus:border-primary transition-colors shadow-sm w-full sm:w-auto">
                 <option value="">Semua Metode</option>
                 <option value="qris">QRIS/E-Wallet</option>
                 <option value="cash">Cash (Tunai)</option>
@@ -239,8 +228,11 @@ const DataView = () => {
           )}
 
           <select 
-            value={activeTab === 'members' ? status : ''}
-            onChange={(e) => activeTab === 'members' && setStatus(e.target.value)}
+            value={activeTab === 'attendances' ? attType : status}
+            onChange={(e) => {
+              if (activeTab === 'attendances') setAttType(e.target.value);
+              else setStatus(e.target.value);
+            }}
             className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-primary focus:border-primary transition-colors shadow-sm w-full sm:w-auto"
           >
             {activeTab === 'members' && (
@@ -303,14 +295,14 @@ const DataView = () => {
                       </td>
                     </tr>
                   )}
-                  {!isLoading && members.length === 0 && (
+                  {!isLoading && dataList.length === 0 && (
                     <tr>
                       <td colSpan="5" className="px-4 py-8 text-center text-foreground/50">
                         Data tidak ditemukan
                       </td>
                     </tr>
                   )}
-                  {!isLoading && members.map(member => (
+                  {!isLoading && dataList.map(member => (
                     <tr key={member.idMember} className="hover:bg-background/50 transition-colors">
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-3">
@@ -383,23 +375,48 @@ const DataView = () => {
           )}
 
           {activeTab === 'transactions' && (
+            <>
             <table className="w-full text-xs text-left text-foreground/80">
               <thead className="text-xs text-foreground uppercase bg-background border-b border-border">
                 <tr>
                   <th className="px-4 py-2 text-center">Invoice</th>
                   <th className="px-4 py-2 text-center">Tanggal</th>
-                  <th className="px-4 py-2 text-center">Member/Guest</th>
+                  <th className="px-4 py-2 text-left">Nama</th>
+                  <th className="px-4 py-2 text-center">Tipe</th>
                   <th className="px-4 py-2 text-center">Metode</th>
                   <th className="px-4 py-2 text-center">Status</th>
                   <th className="px-4 py-2 text-center">Nominal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {dummyTransactions.map(trx => (
-                  <tr key={trx.id} className="hover:bg-background/50 transition-colors">
+                  {isLoading && (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-8 text-center text-foreground/50">
+                        Loading...
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && dataList.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-8 text-center text-foreground/50">
+                        Data tidak ditemukan
+                      </td>
+                    </tr>
+                  )}
+                {!isLoading && dataList.map(trx => (
+                  <tr key={trx.idPayment} className="hover:bg-background/50 transition-colors">
                     <td className="px-4 py-3 font-medium text-foreground">{trx.invoice}</td>
-                    <td className="px-4 py-3 text-center text-foreground">{trx.date}</td>
-                    <td className="px-4 py-3 text-foreground">{trx.member}</td>
+                    <td className="px-4 py-3 text-center text-foreground">{trx.created_at}</td>
+                    <td className="px-4 py-3 text-left text-foreground">{trx.member_name}</td>
+                    <td className="px-4 py-3 text-center text-foreground">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                        trx.customer_type === 'Member' 
+                        ? 'bg-primary/10 text-primary border-primary/20' 
+                        : 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+                      }`}>
+                        {trx.customer_type}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-center">
                       {trx.method}
                     </td>
@@ -407,6 +424,8 @@ const DataView = () => {
                       <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
                         trx.status === 'Lunas' 
                         ? 'bg-green-500/10 text-green-500 border-green-500/20' 
+                        : trx.status === 'Dibatalkan'
+                        ? 'bg-red-500/10 text-red-500 border-red-500/20'
                         : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
                       }`}>
                         {trx.status}
@@ -422,9 +441,34 @@ const DataView = () => {
                 ))}
               </tbody>
             </table>
+            
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center px-4 py-3 bg-background border-t border-border">
+              <span className="text-xs text-foreground/60">
+                Halaman {page} dari {totalPages}
+              </span>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={page === 1}
+                  className="px-3 py-1 text-xs border border-border rounded disabled:opacity-50 hover:bg-border/50 transition-colors"
+                >
+                  Sebelumnya
+                </button>
+                <button 
+                  onClick={handleNextPage} 
+                  disabled={page === totalPages}
+                  className="px-3 py-1 text-xs border border-border rounded disabled:opacity-50 hover:bg-border/50 transition-colors"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            </div>
+            </>
           )}
 
           {activeTab === 'attendances' && (
+            <>
             <table className="w-full text-xs text-left text-foreground/80">
               <thead className="text-xs text-foreground uppercase bg-background border-b border-border">
                 <tr>
@@ -436,7 +480,21 @@ const DataView = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {dummyAttendances.map(att => (
+                  {isLoading && (
+                    <tr>
+                      <td colSpan="5" className="px-4 py-8 text-center text-foreground/50">
+                        Loading...
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && dataList.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="px-4 py-8 text-center text-foreground/50">
+                        Data tidak ditemukan
+                      </td>
+                    </tr>
+                  )}
+                {!isLoading && dataList.map(att => (
                   <tr key={att.id} className="hover:bg-background/50 transition-colors">
                     <td className="px-4 py-2 text-left">{att.name}</td>
                     <td className="px-4 py-2 text-center text-foreground/60">{att.phone}</td>
@@ -450,11 +508,35 @@ const DataView = () => {
                       </span>
                     </td>
                     <td className="px-4 py-2 text-center text-foreground/60">{att.code}</td>
-                    <td className="px-4 py-2 text-left">{att.time}</td>
+                    <td className="px-4 py-2 text-left">{att.checkin_time}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center px-4 py-3 bg-background border-t border-border">
+              <span className="text-xs text-foreground/60">
+                Halaman {page} dari {totalPages}
+              </span>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={page === 1}
+                  className="px-3 py-1 text-xs border border-border rounded disabled:opacity-50 hover:bg-border/50 transition-colors"
+                >
+                  Sebelumnya
+                </button>
+                <button 
+                  onClick={handleNextPage} 
+                  disabled={page === totalPages}
+                  className="px-3 py-1 text-xs border border-border rounded disabled:opacity-50 hover:bg-border/50 transition-colors"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            </div>
+            </>
           )}
         </div>
       </div>

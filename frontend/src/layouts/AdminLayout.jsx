@@ -16,7 +16,8 @@ import {
   X,
   Dumbbell,
   Sun,
-  Moon
+  Moon,
+  ClipboardList
 } from 'lucide-react';
 
 const AdminLayout = ({ toggleTheme, isDarkMode }) => {
@@ -40,6 +41,7 @@ const AdminLayout = ({ toggleTheme, isDarkMode }) => {
     { name: 'Kelola Member', path: '/admin/members', icon: Users },
     { name: 'Paket Membership', path: '/admin/packages', icon: Package },
     { name: 'Pembayaran', path: '/admin/payments', icon: CreditCard },
+    { name: 'Data Kehadiran', path: '/admin/attendance', icon: ClipboardList },
   ];
 
   const { logout } = useAuth();

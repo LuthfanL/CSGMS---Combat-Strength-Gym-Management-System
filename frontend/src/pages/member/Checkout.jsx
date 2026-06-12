@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { QrCode, Banknote, AlertCircle, CheckCircle2, ChevronLeft, Loader2 } from 'lucide-react';
@@ -16,9 +17,10 @@ const MemberCheckout = () => {
   const [paymentMethod, setPaymentMethod] = useState(''); // 'qris' or 'cash'
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // If directly accessed without package, redirect back
   useEffect(() => {
+    setMounted(true);
     if (!pkg) {
       navigate('/member/membership');
     }
@@ -148,9 +150,10 @@ const MemberCheckout = () => {
       </AnimatePresence>
 
       {/* Confirmation Modal */}
-      <AnimatePresence>
-        {showConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {mounted && createPortal(
+        <AnimatePresence>
+          {showConfirmModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -195,7 +198,9 @@ const MemberCheckout = () => {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
     </div>
   );
 };

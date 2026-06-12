@@ -9,6 +9,8 @@ use App\Http\Controllers\PackageController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\GuestController;
 
 // Public routes
 Route::get('/settings', [SettingController::class, 'index']);
@@ -42,6 +44,8 @@ Route::middleware(['auth:sanctum', 'role:owner'])->prefix('owner')->group(functi
     Route::post('/settings', [SettingController::class, 'update']);
     Route::get('/members', [MemberController::class, 'index']);
     Route::get('/members/{id}', [MemberController::class, 'show']);
+    Route::get('/payments', [PaymentController::class, 'indexOwner']);
+    Route::get('/attendances', [AttendanceController::class, 'indexOwner']);
 });
 
 // Admin routes
@@ -56,9 +60,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::put('/packages/{id}', [PackageController::class, 'update']);
     Route::patch('/packages/{id}/toggle-active', [PackageController::class, 'toggleActive']);
 
+    Route::post('/settings/guest-price', [SettingController::class, 'updateGuestPrice']);
+
     Route::prefix('payments')->group(function () {
         Route::get('/', [PaymentController::class, 'indexAdmin']);
         Route::post('/{id}/confirm', [PaymentController::class, 'confirm']);
         Route::post('/{id}/cancel', [PaymentController::class, 'cancel']);
     });
+
+    Route::get('/attendances', [AttendanceController::class, 'indexAdmin']);
+    Route::post('/guests/checkin', [GuestController::class, 'checkin']);
 });

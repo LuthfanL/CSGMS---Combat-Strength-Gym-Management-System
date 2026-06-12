@@ -23,5 +23,6 @@ class GymSetting extends Model
         'email',
         'instagram',
         'tiktok',
+        'guest_price',
     ];
 }

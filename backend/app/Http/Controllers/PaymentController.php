@@ -140,6 +140,77 @@ class PaymentController extends Controller
         ]);
     }
 
+    // --- Owner Endpoints ---
+
+    public function indexOwner(Request $request)
+    {
+        $query = Payment::with(['member.user', 'guest', 'package']);
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice', 'like', "%{$search}%")
+                  ->orWhereHas('member.user', function ($q2) use ($search) {
+                      $q2->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('guest', function ($q3) use ($search) {
+                      $q3->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($method = $request->input('method')) {
+            $query->where('payment_method', $method);
+        }
+
+        if ($period = $request->input('period')) {
+            $now = \Carbon\Carbon::now();
+            if ($period === 'today') {
+                $query->whereDate('created_at', $now->toDateString());
+            } elseif ($period === 'week') {
+                $query->whereBetween('created_at', [$now->startOfWeek()->toDateString(), $now->endOfWeek()->toDateString()]);
+            } elseif ($period === 'month') {
+                $query->whereMonth('created_at', $now->month)->whereYear('created_at', $now->year);
+            } elseif ($period === 'year') {
+                $query->whereYear('created_at', $now->year);
+            }
+        }
+
+        $payments = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        // Transform the collection inside the paginator
+        $payments->getCollection()->transform(function ($payment) {
+            $typeName = 'Lainnya';
+            if ($payment->payment_type === 'new_membership' || $payment->payment_type === 'renew_membership') {
+                $typeName = $payment->package ? $payment->package->name : 'Membership';
+            } elseif ($payment->payment_type === 'guest') {
+                $typeName = 'Guest Harian';
+            }
+
+            $statusLabel = 'Menunggu';
+            if ($payment->status === 'paid') $statusLabel = 'Lunas';
+            if ($payment->status === 'cancel') $statusLabel = 'Dibatalkan';
+
+            return [
+                'idPayment' => $payment->idPayment,
+                'invoice' => $payment->invoice,
+                'member_name' => $payment->member ? $payment->member->user->name : ($payment->guest ? $payment->guest->name : 'Unknown'),
+                'customer_type' => $payment->member ? 'Member' : ($payment->guest ? 'Guest' : 'Unknown'),
+                'type' => $typeName,
+                'method' => strtoupper($payment->payment_method),
+                'amount' => $payment->amount,
+                'status' => $statusLabel,
+                'created_at' => $this->formatDate($payment->created_at),
+                'raw_status' => $payment->status
+            ];
+        });
+
+        return response()->json($payments);
+    }
+
     // --- Admin Endpoints ---
 
     public function indexAdmin()
@@ -175,8 +246,11 @@ class PaymentController extends Controller
                 ];
             });
 
+        $gymSettings = GymSetting::first();
+
         return response()->json([
-            'payments' => $payments
+            'payments' => $payments,
+            'gym' => $gymSettings
         ]);
     }
 
@@ -223,6 +297,15 @@ class PaymentController extends Controller
             ]);
         }
 
+        \App\Models\AuditLog::create([
+            'idUser' => auth()->id(),
+            'action' => 'confirm',
+            'module' => 'payment',
+            'description' => "Mengonfirmasi pembayaran dengan Invoice: {$payment->invoice}",
+            'old_data' => ['status' => 'pending'],
+            'new_data' => ['status' => 'paid'],
+        ]);
+
         return response()->json([
             'message' => 'Pembayaran berhasil dikonfirmasi.',
             'payment' => $payment
@@ -239,6 +322,15 @@ class PaymentController extends Controller
 
         $payment->status = 'cancel';
         $payment->save();
+
+        \App\Models\AuditLog::create([
+            'idUser' => auth()->id(),
+            'action' => 'cancel',
+            'module' => 'payment',
+            'description' => "Membatalkan pembayaran dengan Invoice: {$payment->invoice}",
+            'old_data' => ['status' => 'pending'],
+            'new_data' => ['status' => 'cancel'],
+        ]);
 
         return response()->json([
             'message' => 'Pembayaran berhasil dibatalkan.',

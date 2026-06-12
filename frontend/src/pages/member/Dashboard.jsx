@@ -12,6 +12,7 @@ const API_URL = 'http://localhost:8000/api';
 const MemberDashboard = () => {
   const { user, token, setUser: setAuthUser } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showPackageModal, setShowPackageModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [pendingPayment, setPendingPayment] = useState(null);
 
@@ -37,8 +38,18 @@ const MemberDashboard = () => {
     fetchPendingPayment();
   }, [token]);
 
-  const activePackage = user?.member?.active_membership?.package;
-  const isMembershipActive = !!activePackage;
+  const activeMemberships = user?.member?.active_memberships || [];
+  const currentActivePackage = activeMemberships.length > 0 ? activeMemberships[0].package : null;
+  const isMembershipActive = !!currentActivePackage;
+
+  let displayPackageName = "Belum ada paket";
+  if (isMembershipActive) {
+    if (activeMemberships.length > 1) {
+      displayPackageName = `${currentActivePackage.name} (+${activeMemberships.length - 1} Antrean)`;
+    } else {
+      displayPackageName = currentActivePackage.name;
+    }
+  }
 
   // Derive member profile from auth context
   const member = {
@@ -50,7 +61,7 @@ const MemberDashboard = () => {
     joinDate: user?.created_at ? new Date(user.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-',
     photo: user?.member?.photo ? `${STORAGE_URL}/${user.member.photo}` : null,
     status: isMembershipActive ? "ACTIVE" : "INACTIVE",
-    package: activePackage ? activePackage.name : "Belum ada paket",
+    package: displayPackageName,
     validUntil: user?.member?.active_membership?.end_date 
       ? new Date(user.member.active_membership.end_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) 
       : "-"
@@ -180,10 +191,18 @@ const MemberDashboard = () => {
                     {member.status}
                   </h2>
                   <div className="flex flex-wrap gap-4 text-sm font-medium">
-                    <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-lg px-4 py-2">
-                      <span className="text-white/60 block text-[10px] uppercase mb-0.5">Paket Aktif</span>
+                    <button 
+                      onClick={() => activeMemberships.length > 0 && setShowPackageModal(true)}
+                      className="bg-black/20 backdrop-blur-md border border-white/10 rounded-lg px-4 py-2 text-left hover:bg-black/40 transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-white/60 block text-[10px] uppercase">Paket Aktif</span>
+                        {activeMemberships.length > 0 && (
+                          <Eye className="w-3 h-3 text-white/40 group-hover:text-white transition-colors" />
+                        )}
+                      </div>
                       <span className="text-white">{member.package}</span>
-                    </div>
+                    </button>
                     <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-lg px-4 py-2">
                       <span className="text-white/60 block text-[10px] uppercase mb-0.5">Berlaku Hingga</span>
                       <span className="text-white">{member.validUntil}</span>
@@ -328,8 +347,7 @@ const MemberDashboard = () => {
             {qrCodeUrl ? (
               <>
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-primary via-orange-500 to-primary rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-gradient-xy"></div>
-                  <div className="relative bg-white p-4 rounded-xl shadow-2xl border border-gray-100 mb-6 transform transition-transform group-hover:scale-[1.02]">
+                  <div className="relative bg-white p-4 rounded-xl shadow-sm border border-border mb-6 transform transition-transform group-hover:scale-[1.02]">
                     <img 
                       src={qrCodeUrl} 
                       alt="Member QR Code" 
@@ -390,6 +408,84 @@ const MemberDashboard = () => {
                 setShowEditModal(false);
               }}
             />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Active Packages Detail Modal */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {showPackageModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPackageModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-border flex justify-between items-center bg-background/50 sticky top-0 z-10">
+                <div>
+                  <h3 className="text-xl font-bold">Detail Paket Aktif</h3>
+                  <p className="text-sm text-foreground/60">Rincian masa aktif membership Anda</p>
+                </div>
+                <button 
+                  onClick={() => setShowPackageModal(false)}
+                  className="p-2 hover:bg-foreground/5 rounded-full transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto space-y-4">
+                {activeMemberships.map((am, idx) => {
+                  const startDate = new Date(am.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                  const endDate = new Date(am.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                  const isCurrentlyRunning = new Date(am.start_date) <= new Date() && new Date(am.end_date) >= new Date();
+                  
+                  return (
+                    <div key={idx} className={`p-4 rounded-xl border ${isCurrentlyRunning ? 'border-primary/50 bg-primary/5' : 'border-border bg-background'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-foreground">{am.package.name}</h4>
+                        {isCurrentlyRunning ? (
+                          <span className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full uppercase tracking-wider">Sedang Berjalan</span>
+                        ) : (
+                          <span className="px-2 py-1 bg-foreground/10 text-foreground/70 text-[10px] font-bold rounded-full uppercase tracking-wider">Mengantre</span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm mt-3">
+                        <div>
+                          <p className="text-xs text-foreground/60 mb-0.5">Mulai Aktif</p>
+                          <p className="font-medium">{startDate}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-foreground/60 mb-0.5">Berakhir Pada</p>
+                          <p className="font-medium">{endDate}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="p-4 border-t border-border bg-background/50 flex justify-end">
+                <button 
+                  onClick={() => setShowPackageModal(false)}
+                  className="px-6 py-2.5 bg-foreground text-background font-bold rounded-xl hover:bg-foreground/90 transition-all text-sm"
+                >
+                  Tutup
+                </button>
+              </div>
+            </motion.div>
+            </div>
           )}
         </AnimatePresence>,
         document.body
