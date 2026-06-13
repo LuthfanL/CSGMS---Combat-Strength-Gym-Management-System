@@ -1,29 +1,10 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, UserPlus, CreditCard, Activity } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend
 } from 'recharts';
-
-// Dummy Data
-const attendanceData = [
-  { name: 'Senin', Member: 45, Guest: 12 },
-  { name: 'Selasa', Member: 52, Guest: 8 },
-  { name: 'Rabu', Member: 38, Guest: 15 },
-  { name: 'Kamis', Member: 60, Guest: 10 },
-  { name: 'Jumat', Member: 65, Guest: 20 },
-  { name: 'Sabtu', Member: 85, Guest: 30 },
-  { name: 'Minggu', Member: 70, Guest: 25 },
-];
-
-const revenueData = [
-  { name: 'Jan', Total: 4000000 },
-  { name: 'Feb', Total: 3000000 },
-  { name: 'Mar', Total: 5000000 },
-  { name: 'Apr', Total: 4500000 },
-  { name: 'Mei', Total: 6000000 },
-  { name: 'Jun', Total: 7500000 },
-];
+import { useAuth } from '../../context/AuthContext';
 
 // Reusable Stat Card
 const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) => (
@@ -47,9 +28,48 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) => 
 );
 
 const Dashboard = () => {
+  const { token } = useAuth();
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     document.title = "Dashboard Owner - CSGMS";
-  }, []);
+    
+    const fetchDashboard = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/owner/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        if (res.ok) {
+          const result = await res.json();
+          setData(result);
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (token) fetchDashboard();
+  }, [token]);
+
+  if (isLoading || !data) {
+    return (
+      <div className="flex flex-col h-full space-y-6 pb-4">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Ringkasan Hari Ini</h1>
+          <p className="text-foreground/70 text-xs">Overview operasional gym Anda hari ini.</p>
+        </div>
+        <div className="flex justify-center items-center h-[200px] text-foreground/50">
+          Memuat data dashboard...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full space-y-6 pb-4">
@@ -62,32 +82,32 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           title="Pendapatan Hari Ini" 
-          value="Rp 1.250.000" 
-          subtitle="Dari 5 member baru & 12 guest"
+          value={`Rp ${Number(data.summary.revenue.value).toLocaleString('id-ID')}`} 
+          subtitle={`Dari ${data.summary.revenue.memberTransactions} member & ${data.summary.revenue.guestTransactions} guest`}
           icon={CreditCard}
-          trend="up"
-          trendValue="15%"
+          trend={data.summary.revenue.trend}
+          trendValue={`${data.summary.revenue.trendValue}%`}
         />
         <StatCard 
           title="Kehadiran Member" 
-          value="45" 
+          value={data.summary.memberAttendance.value} 
           subtitle="Orang check-in hari ini"
           icon={Users}
-          trend="up"
-          trendValue="5%"
+          trend={data.summary.memberAttendance.trend}
+          trendValue={`${data.summary.memberAttendance.trendValue}%`}
         />
         <StatCard 
           title="Kehadiran Guest" 
-          value="12" 
+          value={data.summary.guestAttendance.value} 
           subtitle="Orang check-in hari ini"
           icon={UserPlus}
-          trend="down"
-          trendValue="2%"
+          trend={data.summary.guestAttendance.trend}
+          trendValue={`${data.summary.guestAttendance.trendValue}%`}
         />
         <StatCard 
           title="Total Member Aktif" 
-          value="128" 
-          subtitle="5 member akan expired dalam 3 hari"
+          value={data.summary.activeMembers.value} 
+          subtitle={`${data.summary.activeMembers.expiringSoon} member akan expired dalam 3 hari`}
           icon={Activity}
         />
       </div>
@@ -99,7 +119,7 @@ const Dashboard = () => {
           <h3 className="text-base font-bold text-foreground mb-2">Grafik Kehadiran (7 Hari Terakhir)</h3>
           <div className="w-full flex-1 min-h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={attendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={data.charts.attendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
                 <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} />
@@ -120,7 +140,7 @@ const Dashboard = () => {
           <h3 className="text-base font-bold text-foreground mb-2">Tren Pendapatan Bulanan</h3>
           <div className="w-full flex-1 min-h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+              <AreaChart data={data.charts.revenue} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--accent-neon)" stopOpacity={0.3}/>

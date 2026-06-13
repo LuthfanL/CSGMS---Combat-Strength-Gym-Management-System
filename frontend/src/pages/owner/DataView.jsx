@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, Eye, X, Phone, Mail, MapPin, Calendar, FileSpreadsheet, Download } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Dummy data removed. Using real APIs.
 
@@ -33,6 +34,52 @@ const DataView = () => {
   const [attStartDate, setAttStartDate] = useState('');
   const [attEndDate, setAttEndDate] = useState('');
   const [attType, setAttType] = useState('');
+
+  // States specific to export modal
+  const [exportMemberStatus, setExportMemberStatus] = useState('all');
+  const [exportPeriod, setExportPeriod] = useState('month');
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
+
+  // Automatically calculate dates when exportPeriod changes
+  useEffect(() => {
+    if (exportPeriod === 'custom') return;
+    
+    if (exportPeriod === 'all') {
+      setExportStartDate('');
+      setExportEndDate('');
+      return;
+    }
+
+    const today = new Date();
+    let start = new Date();
+
+    if (exportPeriod === 'today') {
+      // start is today
+    } else if (exportPeriod === 'week') {
+      const day = today.getDay();
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1); // adjust to Monday
+      start.setDate(diff);
+    } else if (exportPeriod === 'month') {
+      start.setDate(1);
+    } else if (exportPeriod === '6months') {
+      start.setMonth(today.getMonth() - 5);
+      start.setDate(1);
+    } else if (exportPeriod === 'year') {
+      start.setMonth(0);
+      start.setDate(1);
+    }
+
+    const formatYMD = (date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+
+    setExportStartDate(formatYMD(start));
+    setExportEndDate(formatYMD(today));
+  }, [exportPeriod]);
 
   // Handle tab change synchronously to prevent render crashes
   const handleTabChange = (tab) => {
@@ -144,6 +191,66 @@ const DataView = () => {
 
   const handlePrevPage = () => {
     if (page > 1) setPage(page - 1);
+  };
+
+  const handleDownload = async () => {
+    let url = '';
+    const params = new URLSearchParams();
+    
+    if (activeTab === 'members') {
+      url = 'http://localhost:8000/api/owner/export/members';
+      if (exportMemberStatus && exportMemberStatus !== 'all') {
+        params.append('status', exportMemberStatus);
+      }
+    } else if (activeTab === 'transactions') {
+      url = 'http://localhost:8000/api/owner/export/transactions';
+      if (exportStartDate && exportPeriod !== 'all') params.append('start_date', exportStartDate);
+      if (exportEndDate && exportPeriod !== 'all') params.append('end_date', exportEndDate);
+    } else if (activeTab === 'attendances') {
+      url = 'http://localhost:8000/api/owner/export/attendances';
+      if (exportStartDate && exportPeriod !== 'all') params.append('start_date', exportStartDate);
+      if (exportEndDate && exportPeriod !== 'all') params.append('end_date', exportEndDate);
+    }
+    
+    if (params.toString()) {
+      url += '?' + params.toString();
+    }
+    
+    try {
+      const toastId = toast.loading('Memproses Laporan Excel...');
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.ok) {
+        const blob = await res.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        
+        let filename = `Laporan_${activeTab}.xlsx`;
+        const disposition = res.headers.get('Content-Disposition');
+        if (disposition && disposition.indexOf('filename=') !== -1) {
+          filename = disposition.split('filename=')[1].replace(/['"]/g, '');
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+        toast.success('Laporan Excel berhasil diunduh!', { id: toastId });
+        closeModal();
+      } else {
+        toast.error('Gagal mengunduh laporan. Periksa koneksi Anda.', { id: toastId });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Terjadi kesalahan saat mengunduh laporan.', { id: toastId });
+    }
   };
 
   return (
@@ -640,11 +747,16 @@ const DataView = () => {
                 {activeTab === 'members' && (
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-foreground">Status Member</label>
-                    <select className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-green-500 focus:border-green-500 transition-colors">
+                    <select 
+                      value={exportMemberStatus}
+                      onChange={(e) => setExportMemberStatus(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-green-500 focus:border-green-500 transition-colors"
+                    >
                       <option value="all">Semua Status</option>
                       <option value="aktif">Aktif</option>
                       <option value="expired">Expired</option>
                       <option value="nonaktif">Nonaktif</option>
+                      <option value="belum_aktif">Belum Aktif</option>
                     </select>
                   </div>
                 )}
@@ -652,13 +764,43 @@ const DataView = () => {
                 {(activeTab === 'transactions' || activeTab === 'attendances') && (
                   <>
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-foreground">Dari Tanggal</label>
-                      <input type="date" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-green-500 focus:border-green-500 transition-colors dark:[color-scheme:dark]" />
+                      <label className="text-xs font-medium text-foreground">Periode</label>
+                      <select 
+                        value={exportPeriod}
+                        onChange={(e) => setExportPeriod(e.target.value)}
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-green-500 focus:border-green-500 transition-colors"
+                      >
+                        <option value="today">Hari Ini</option>
+                        <option value="week">Minggu Ini</option>
+                        <option value="month">Bulan Ini</option>
+                        <option value="6months">6 Bulan Terakhir</option>
+                        <option value="year">Tahun Ini</option>
+                        <option value="all">Semua Data</option>
+                        <option value="custom">Custom Tanggal</option>
+                      </select>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-foreground">Sampai Tanggal</label>
-                      <input type="date" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-green-500 focus:border-green-500 transition-colors dark:[color-scheme:dark]" />
-                    </div>
+                    {exportPeriod === 'custom' && (
+                      <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-medium text-foreground/70 uppercase">Dari Tanggal</label>
+                          <input 
+                            type="date" 
+                            value={exportStartDate}
+                            onChange={(e) => setExportStartDate(e.target.value)}
+                            className="w-full bg-background border border-border rounded-lg px-2 py-1.5 text-sm text-foreground focus:ring-green-500 focus:border-green-500 transition-colors dark:[color-scheme:dark]" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-medium text-foreground/70 uppercase">Sampai Tanggal</label>
+                          <input 
+                            type="date" 
+                            value={exportEndDate}
+                            onChange={(e) => setExportEndDate(e.target.value)}
+                            className="w-full bg-background border border-border rounded-lg px-2 py-1.5 text-sm text-foreground focus:ring-green-500 focus:border-green-500 transition-colors dark:[color-scheme:dark]" 
+                          />
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -668,10 +810,7 @@ const DataView = () => {
                 Batal
               </button>
               <button 
-                onClick={() => {
-                  alert(`Memulai unduh laporan Excel untuk Data ${activeTab === 'members' ? 'Member' : activeTab === 'transactions' ? 'Transaksi' : 'Kehadiran'}...`);
-                  closeModal();
-                }} 
+                onClick={handleDownload} 
                 className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-[0_0_10px_rgba(34,197,94,0.3)]"
               >
                 <Download className="w-4 h-4" /> Unduh Laporan

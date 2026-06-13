@@ -16,7 +16,9 @@ import {
   X,
   Dumbbell,
   Sun,
-  Moon
+  Moon,
+  Package,
+  UserCog
 } from 'lucide-react';
 
 const DashboardLayout = ({ toggleTheme, isDarkMode }) => {
@@ -35,6 +37,8 @@ const DashboardLayout = ({ toggleTheme, isDarkMode }) => {
 
   const navItems = [
     { name: 'Dashboard', path: '/owner/dashboard', icon: LayoutDashboard },
+    { name: 'Kelola Member', path: '/owner/members', icon: UserCog },
+    { name: 'Paket Membership', path: '/owner/packages', icon: Package },
     { name: 'Data Operasional', path: '/owner/data', icon: Database },
     { name: 'Pengaturan Gym', path: '/owner/settings', icon: Settings },
     { name: 'Akun Admin', path: '/owner/admins', icon: Users },

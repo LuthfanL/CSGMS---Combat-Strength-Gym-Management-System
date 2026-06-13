@@ -1,14 +1,61 @@
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { History, CalendarDays, Clock, MapPin, Activity, CalendarCheck } from 'lucide-react';
+import { History, CalendarDays, Clock, MapPin, Activity, CalendarCheck, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+
+const API_URL = 'http://localhost:8000/api';
 
 const MemberAttendance = () => {
-  const attendances = [
-    { id: 1, date: "10 Jun 2026", time: "16:45 WIB", status: "Hadir" },
-    { id: 2, date: "08 Jun 2026", time: "17:10 WIB", status: "Hadir" },
-    { id: 3, date: "05 Jun 2026", time: "09:30 WIB", status: "Hadir" },
-    { id: 4, date: "03 Jun 2026", time: "18:05 WIB", status: "Hadir" },
-    { id: 5, date: "01 Jun 2026", time: "16:20 WIB", status: "Hadir" },
-  ];
+  const { token } = useAuth();
+  const [attendances, setAttendances] = useState([]);
+  const [stats, setStats] = useState({ total: 0, avg_per_week: 0, last_visit: '-' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAttendances = async () => {
+      try {
+        const res = await fetch(`${API_URL}/member/attendances`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          setAttendances(data.attendances || []);
+          setStats(data.stats || { total: 0, avg_per_week: 0, last_visit: '-' });
+        } else {
+          setError(data.message || 'Gagal mengambil data kehadiran');
+        }
+      } catch (err) {
+        setError('Terjadi kesalahan koneksi');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAttendances();
+  }, [token]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-foreground/50">
+        <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
+        <p>Memuat riwayat kehadiran...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl">
+        <p className="font-bold">Error</p>
+        <p className="text-sm">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -33,7 +80,7 @@ const MemberAttendance = () => {
           </div>
           <div>
             <p className="text-sm text-foreground/60">Total Kunjungan</p>
-            <p className="text-2xl font-bold">42 <span className="text-sm font-normal text-foreground/60">kali</span></p>
+            <p className="text-2xl font-bold">{stats.total} <span className="text-sm font-normal text-foreground/60">kali</span></p>
           </div>
         </motion.div>
 
@@ -49,7 +96,7 @@ const MemberAttendance = () => {
           </div>
           <div>
             <p className="text-sm text-foreground/60">Rata-rata Latihan</p>
-            <p className="text-2xl font-bold">3<span className="text-sm font-normal text-foreground/60">x / minggu</span></p>
+            <p className="text-2xl font-bold">{stats.avg_per_week}<span className="text-sm font-normal text-foreground/60">x / minggu</span></p>
           </div>
         </motion.div>
 
@@ -65,7 +112,7 @@ const MemberAttendance = () => {
           </div>
           <div>
             <p className="text-sm text-foreground/60">Terakhir Hadir</p>
-            <p className="text-lg font-bold mt-1">10 Jun 2026</p>
+            <p className="text-lg font-bold mt-1">{stats.last_visit}</p>
           </div>
         </motion.div>
       </div>

@@ -87,6 +87,8 @@ function App() {
               <Route path="settings" element={<OwnerSettings />} />
               <Route path="admins" element={<OwnerAdmins />} />
               <Route path="audit-logs" element={<OwnerAuditLogs />} />
+              <Route path="members" element={<AdminMembers />} />
+              <Route path="packages" element={<AdminPackages />} />
             </Route>
 
             {/* Admin Dashboard Routes */}

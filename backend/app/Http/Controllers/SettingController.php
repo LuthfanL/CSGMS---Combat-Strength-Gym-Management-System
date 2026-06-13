@@ -61,6 +61,16 @@ class SettingController extends Controller
             $settings->logo = $path;
         }
 
+        $old_data = [];
+        $new_data = [];
+
+        if ($settings->isDirty()) {
+            foreach ($settings->getDirty() as $key => $value) {
+                $old_data[$key] = $settings->getOriginal($key);
+                $new_data[$key] = $value;
+            }
+        }
+
         $settings->save();
 
         // Handle Operating Hours
@@ -69,25 +79,35 @@ class SettingController extends Controller
             if (is_array($hours)) {
                 foreach ($hours as $hour) {
                     if (isset($hour['day'])) {
-                        // Translate indonesian day to english day if necessary, 
-                        // but better handle english day in backend.
-                        // We will map it properly.
-                        GymOperatingHour::where('day', $hour['day'])->update([
-                            'open_time' => $hour['open_time'] ?: null,
-                            'close_time' => $hour['close_time'] ?: null,
-                            'is_closed' => filter_var($hour['is_closed'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0,
-                        ]);
+                        $opHour = GymOperatingHour::where('day', $hour['day'])->first();
+                        if ($opHour) {
+                            $opHour->open_time = $hour['open_time'] ?: null;
+                            $opHour->close_time = $hour['close_time'] ?: null;
+                            $opHour->is_closed = filter_var($hour['is_closed'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+
+                            if ($opHour->isDirty()) {
+                                foreach ($opHour->getDirty() as $key => $value) {
+                                    $old_data["{$hour['day']}_{$key}"] = $opHour->getOriginal($key);
+                                    $new_data["{$hour['day']}_{$key}"] = $value;
+                                }
+                                $opHour->save();
+                            }
+                        }
                     }
                 }
             }
         }
 
-        \App\Models\AuditLog::create([
-            'idUser' => $request->user()->idUser,
-            'action' => 'update',
-            'module' => 'setting',
-            'description' => 'Mengubah Pengaturan Gym dan Jam Operasional'
-        ]);
+        if (!empty($old_data) || !empty($new_data)) {
+            \App\Models\AuditLog::create([
+                'idUser' => $request->user()->idUser,
+                'action' => 'update',
+                'module' => 'setting',
+                'description' => 'Mengubah Pengaturan Gym dan Jam Operasional',
+                'old_data' => $old_data,
+                'new_data' => $new_data
+            ]);
+        }
 
         return response()->json([
             'message' => 'Settings updated successfully',
