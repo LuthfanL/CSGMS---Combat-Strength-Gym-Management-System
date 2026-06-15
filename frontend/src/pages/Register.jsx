@@ -153,7 +153,7 @@ const Register = () => {
           transition={{ duration: 0.5 }}
           className="bg-card py-4 px-6 sm:px-10 shadow-2xl rounded-2xl border border-border w-full max-w-xl mx-auto"
         >
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" autoComplete="off">
             {/* Foto Profile */}
             <div className="flex flex-col items-center mb-2">
               <div className="relative w-20 h-20 rounded-full border-2 border-dashed border-border flex items-center justify-center bg-background overflow-hidden group">
@@ -229,6 +229,7 @@ const Register = () => {
                   </div>
                   <input
                     type="email"
+                    autoComplete="off"
                     className="bg-background block w-full pl-10 pr-9 py-1.5 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                     placeholder="budi@example.com"
                     {...registerField('email', { 
@@ -307,6 +308,7 @@ const Register = () => {
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     className="bg-background block w-full pl-10 pr-10 py-1.5 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                     placeholder="••••••••"
                     {...registerField('password', { 
@@ -353,6 +355,7 @@ const Register = () => {
                   </div>
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     className="bg-background block w-full pl-10 pr-10 py-1.5 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                     placeholder="••••••••"
                     {...registerField('passwordConfirmation', { 

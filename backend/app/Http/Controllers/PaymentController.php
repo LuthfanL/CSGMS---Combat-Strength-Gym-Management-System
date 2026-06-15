@@ -8,6 +8,8 @@ use App\Models\Membership;
 use App\Models\GymSetting;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\InvoiceMail;
 
 class PaymentController extends Controller
 {
@@ -278,6 +280,22 @@ class PaymentController extends Controller
             $member = $payment->member;
             $package = $payment->package;
 
+            // Generate member_code if they don't have one
+            if (!$member->member_code) {
+                $lastMember = \App\Models\Member::whereNotNull('member_code')
+                    ->orderBy('member_code', 'desc')
+                    ->first();
+                
+                if ($lastMember && preg_match('/CSGMS-(\d+)/', $lastMember->member_code, $matches)) {
+                    $newSequence = str_pad((int)$matches[1] + 1, 3, '0', STR_PAD_LEFT);
+                } else {
+                    $newSequence = '001';
+                }
+                
+                $member->member_code = 'CSGMS-' . $newSequence;
+                $member->save();
+            }
+
             $activeMembership = $member->activeMembership;
             $startDate = now();
 
@@ -305,6 +323,15 @@ class PaymentController extends Controller
             'old_data' => ['status' => 'pending'],
             'new_data' => ['status' => 'paid'],
         ]);
+
+        // Send email to member if it's a member transaction
+        if ($payment->member && $payment->member->user && $payment->member->user->email) {
+            try {
+                Mail::to($payment->member->user->email)->send(new InvoiceMail($payment));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send invoice email: ' . $e->getMessage());
+            }
+        }
 
         return response()->json([
             'message' => 'Pembayaran berhasil dikonfirmasi.',

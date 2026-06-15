@@ -4,6 +4,7 @@ import { Mail, Lock, Dumbbell, Eye, EyeOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useGym } from '../context/GymContext';
 import { toast } from 'sonner';
 
 const Login = () => {
@@ -13,6 +14,7 @@ const Login = () => {
 
   const { register, handleSubmit, formState: { errors } } = useForm();
   const { login } = useAuth();
+  const { gymSettings } = useGym();
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -37,9 +39,19 @@ const Login = () => {
   return (
     <div className="min-h-[calc(100vh-80px)] bg-background py-8 lg:py-0 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
       <div className="max-w-md mx-auto w-full">
-        <div className="text-center mb-6 flex flex-col items-center">
-          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-            <Dumbbell className="h-6 w-6 text-primary" />
+        <div className="text-center mb-4 flex flex-col items-center">
+          <div className="flex items-center justify-center mb-2">
+            {gymSettings?.logo ? (
+              <img 
+                src={`http://localhost:8000/storage/${gymSettings.logo}`} 
+                alt="Logo Gym" 
+                className="h-20 w-auto object-contain drop-shadow-lg" 
+              />
+            ) : (
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <Dumbbell className="h-8 w-8 text-primary" />
+              </div>
+            )}
           </div>
           <h2 className="text-3xl font-extrabold text-foreground">
             Selamat Datang Kembali
@@ -90,6 +102,7 @@ const Login = () => {
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   className="bg-background block w-full pl-10 pr-10 py-2 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                   placeholder="••••••••"
                   {...register('password', { 
@@ -125,9 +138,9 @@ const Login = () => {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-primary hover:text-primary-hover transition-colors">
+                <Link to="/forgot-password" className="font-medium text-primary hover:text-primary-hover transition-colors">
                   Lupa password?
-                </a>
+                </Link>
               </div>
             </div>
 
