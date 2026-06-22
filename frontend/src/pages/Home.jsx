@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import Hero from '../components/Hero';
 import Features from '../components/Features';
 import Pricing from '../components/Pricing';
+import ChatWidget from '../components/ChatWidget';
 
 const Home = () => {
   useEffect(() => {
@@ -13,6 +14,8 @@ const Home = () => {
       <Hero />
       <Features />
       <Pricing />
+      {/* Chat Widget */}
+      <ChatWidget />
     </>
   );
 };

@@ -16,6 +16,7 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
+import ChatWidget from '../components/ChatWidget';
 
 const MemberLayout = ({ toggleTheme, isDarkMode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -193,6 +194,9 @@ const MemberLayout = ({ toggleTheme, isDarkMode }) => {
           <Outlet />
         </div>
       </main>
+
+      {/* Chat Widget */}
+      <ChatWidget />
 
       {/* Logout Modal */}
       {mounted && createPortal(

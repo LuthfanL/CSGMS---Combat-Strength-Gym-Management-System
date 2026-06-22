@@ -12,6 +12,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\ChatbotController;
 
 // Public routes
 Route::get('/settings', [SettingController::class, 'index']);
@@ -22,6 +23,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/check-email', [AuthController::class, 'checkEmail']);
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+Route::post('/chatbot', [ChatbotController::class, 'handleChat']); // Public/Private Chatbot
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
