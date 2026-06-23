@@ -10,7 +10,7 @@ const Pricing = () => {
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/packages/active');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/packages/active`);
         if (res.ok) {
           const data = await res.json();
           setPackages(data);

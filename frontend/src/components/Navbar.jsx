@@ -26,7 +26,7 @@ const Navbar = ({ toggleTheme, isDarkMode }) => {
           <div className="flex items-center gap-2">
             <Link to="/" className="flex items-center gap-3">
               {gymSettings?.logo ? (
-                <img src={`http://localhost:8000/storage/${gymSettings.logo}`} alt="Logo" className="h-12 w-12 object-contain" />
+                <img src={`${import.meta.env.VITE_STORAGE_URL}/${gymSettings.logo}`} alt="Logo" className="h-12 w-12 object-contain" />
               ) : (
                 <Dumbbell className="h-10 w-10 text-primary" />
               )}

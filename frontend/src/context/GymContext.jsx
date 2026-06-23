@@ -12,7 +12,7 @@ export const GymProvider = ({ children }) => {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/settings');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/settings`);
       if (res.ok) {
         const data = await res.json();
         
@@ -34,7 +34,7 @@ export const GymProvider = ({ children }) => {
             link.rel = 'icon';
             document.head.appendChild(link);
           }
-          link.href = `http://localhost:8000/storage/${data.settings.logo}`;
+          link.href = `${import.meta.env.VITE_STORAGE_URL}/${data.settings.logo}`;
         }
       }
     } catch (err) {

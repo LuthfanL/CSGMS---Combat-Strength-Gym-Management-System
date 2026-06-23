@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { History, CalendarDays, Clock, MapPin, Activity, CalendarCheck, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const MemberAttendance = () => {
   const { token } = useAuth();

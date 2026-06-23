@@ -6,8 +6,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
-const STORAGE_URL = 'http://localhost:8000/storage';
-const API_URL = 'http://localhost:8000/api';
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 
 const MemberDashboard = () => {
   const { user, token, setUser: setAuthUser } = useAuth();

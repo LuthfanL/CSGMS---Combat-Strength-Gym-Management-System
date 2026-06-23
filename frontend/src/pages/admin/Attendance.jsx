@@ -3,7 +3,7 @@ import { Search, Loader2, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const AdminAttendance = () => {
   const { token } = useAuth();

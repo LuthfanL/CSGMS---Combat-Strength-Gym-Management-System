@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Guest = () => {
   const { token } = useAuth();

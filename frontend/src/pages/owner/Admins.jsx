@@ -4,8 +4,8 @@ import { Plus, Edit2, UserX, UserCheck, Search, X, Camera, Loader2, Users, Alert
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:8000/api';
-const STORAGE_URL = 'http://localhost:8000/storage';
+const API_URL = import.meta.env.VITE_API_URL;
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL;
 
 const Admins = () => {
   const { token } = useAuth();

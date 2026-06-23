@@ -60,7 +60,7 @@ const MemberLayout = ({ toggleTheme, isDarkMode }) => {
         <div className="bg-card border-b border-border h-16 flex items-center justify-between px-4 shadow-sm">
           <div className="flex items-center gap-2">
             {gymSettings?.logo ? (
-              <img src={`http://localhost:8000/storage/${gymSettings.logo}`} alt="Logo" className="w-6 h-6 object-contain" />
+              <img src={`${import.meta.env.VITE_STORAGE_URL}/${gymSettings.logo}`} alt="Logo" className="w-6 h-6 object-contain" />
             ) : (
               <Dumbbell className="h-6 w-6 text-primary" />
             )}
@@ -131,7 +131,7 @@ const MemberLayout = ({ toggleTheme, isDarkMode }) => {
         {/* Sidebar Header (Desktop) */}
         <div className="flex h-16 items-center gap-2 px-6 border-b border-border shadow-sm">
           {gymSettings?.logo ? (
-            <img src={`http://localhost:8000/storage/${gymSettings.logo}`} alt="Logo" className="w-8 h-8 object-contain" />
+            <img src={`${import.meta.env.VITE_STORAGE_URL}/${gymSettings.logo}`} alt="Logo" className="w-8 h-8 object-contain" />
           ) : (
             <Dumbbell className="h-8 w-8 text-primary" />
           )}

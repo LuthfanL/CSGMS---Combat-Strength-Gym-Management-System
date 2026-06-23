@@ -4,8 +4,8 @@ import { Search, Edit, UserX, UserCheck, Eye, X, Save, MapPin, Phone, Mail, Cale
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:8000/api';
-const STORAGE_URL = 'http://localhost:8000/storage';
+const API_URL = import.meta.env.VITE_API_URL;
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL;
 
 const Members = () => {
   const { token } = useAuth();

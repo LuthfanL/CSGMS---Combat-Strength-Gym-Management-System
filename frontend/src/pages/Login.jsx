@@ -43,7 +43,7 @@ const Login = () => {
           <div className="flex items-center justify-center mb-2">
             {gymSettings?.logo ? (
               <img 
-                src={`http://localhost:8000/storage/${gymSettings.logo}`} 
+                src={`${import.meta.env.VITE_STORAGE_URL}/${gymSettings.logo}`} 
                 alt="Logo Gym" 
                 className="h-20 w-auto object-contain drop-shadow-lg" 
               />

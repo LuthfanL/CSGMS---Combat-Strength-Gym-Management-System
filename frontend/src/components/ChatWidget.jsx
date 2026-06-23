@@ -46,7 +46,7 @@ const ChatWidget = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch('http://localhost:8000/api/chatbot', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chatbot`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ message: userMsg.text }),

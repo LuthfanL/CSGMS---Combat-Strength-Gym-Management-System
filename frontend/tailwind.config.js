@@ -17,6 +17,7 @@ export default {
         primary: {
           DEFAULT: 'var(--accent-neon)',
           hover: 'var(--accent-hover)',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

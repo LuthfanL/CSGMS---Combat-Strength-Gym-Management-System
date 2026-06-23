@@ -6,7 +6,7 @@ import { Clock, Download, Home, X, CheckCircle2, XCircle, ChevronRight, Loader2 
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const PaymentInvoice = () => {
   const { id } = useParams();

@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import html2pdf from 'html2pdf.js';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const MemberPayments = () => {
   const navigate = useNavigate();

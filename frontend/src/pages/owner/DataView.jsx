@@ -120,7 +120,7 @@ const DataView = () => {
           if (attEndDate) params.append('end_date', attEndDate);
         }
 
-        const res = await fetch(`http://localhost:8000${endpoint}?${params.toString()}`, {
+        const res = await fetch(`${import.meta.env.VITE_BASE_URL}${endpoint}?${params.toString()}`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -156,7 +156,7 @@ const DataView = () => {
 
   const handleView = async (member) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/owner/members/${member.idMember}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/owner/members/${member.idMember}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -198,16 +198,16 @@ const DataView = () => {
     const params = new URLSearchParams();
     
     if (activeTab === 'members') {
-      url = 'http://localhost:8000/api/owner/export/members';
+      url = `${import.meta.env.VITE_API_URL}/owner/export/members`;
       if (exportMemberStatus && exportMemberStatus !== 'all') {
         params.append('status', exportMemberStatus);
       }
     } else if (activeTab === 'transactions') {
-      url = 'http://localhost:8000/api/owner/export/transactions';
+      url = `${import.meta.env.VITE_API_URL}/owner/export/transactions`;
       if (exportStartDate && exportPeriod !== 'all') params.append('start_date', exportStartDate);
       if (exportEndDate && exportPeriod !== 'all') params.append('end_date', exportEndDate);
     } else if (activeTab === 'attendances') {
-      url = 'http://localhost:8000/api/owner/export/attendances';
+      url = `${import.meta.env.VITE_API_URL}/owner/export/attendances`;
       if (exportStartDate && exportPeriod !== 'all') params.append('start_date', exportStartDate);
       if (exportEndDate && exportPeriod !== 'all') params.append('end_date', exportEndDate);
     }
@@ -414,7 +414,7 @@ const DataView = () => {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           {member.photo ? (
-                            <img src={`http://localhost:8000/storage/${member.photo}`} alt={member.name} className="w-8 h-8 rounded-full object-cover border border-border" />
+                            <img src={`${import.meta.env.VITE_STORAGE_URL}/${member.photo}`} alt={member.name} className="w-8 h-8 rounded-full object-cover border border-border" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
                               {member.name.charAt(0)}
@@ -664,7 +664,7 @@ const DataView = () => {
             <div className="p-6 space-y-6">
               <div className="flex flex-col items-center gap-2 text-center pb-2">
                 {selectedMember.photo ? (
-                  <img src={`http://localhost:8000/storage/${selectedMember.photo}`} alt={selectedMember.name} className="w-24 h-24 rounded-full object-cover border-4 border-primary/20 shadow-inner mb-2" />
+                  <img src={`${import.meta.env.VITE_STORAGE_URL}/${selectedMember.photo}`} alt={selectedMember.name} className="w-24 h-24 rounded-full object-cover border-4 border-primary/20 shadow-inner mb-2" />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-primary/10 border-4 border-primary/20 flex items-center justify-center text-primary font-bold text-4xl shadow-inner mb-2">
                     {selectedMember.name.charAt(0)}

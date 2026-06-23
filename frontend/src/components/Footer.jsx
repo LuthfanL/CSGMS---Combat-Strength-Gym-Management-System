@@ -16,7 +16,7 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               {gymSettings?.logo ? (
-                <img src={`http://localhost:8000/storage/${gymSettings.logo}`} alt="Logo" className="h-8 w-8 object-contain filter grayscale opacity-80" />
+                <img src={`${import.meta.env.VITE_STORAGE_URL}/${gymSettings.logo}`} alt="Logo" className="h-8 w-8 object-contain filter grayscale opacity-80" />
               ) : (
                 <Dumbbell className="h-8 w-8 text-primary" />
               )}

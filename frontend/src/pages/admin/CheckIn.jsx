@@ -5,8 +5,8 @@ import { ScanLine, Keyboard, UserCheck, Loader2, CheckCircle2, AlertCircle, Cale
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:8000/api';
-const STORAGE_URL = 'http://localhost:8000/storage';
+const API_URL = import.meta.env.VITE_API_URL;
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL;
 
 const CheckIn = () => {
   const { token } = useAuth();

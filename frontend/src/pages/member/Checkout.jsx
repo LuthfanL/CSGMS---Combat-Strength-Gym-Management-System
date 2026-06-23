@@ -6,7 +6,7 @@ import { QrCode, Banknote, AlertCircle, CheckCircle2, ChevronLeft, Loader2 } fro
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const MemberCheckout = () => {
   const navigate = useNavigate();

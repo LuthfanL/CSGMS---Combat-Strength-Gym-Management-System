@@ -61,7 +61,7 @@ const ResetPassword = () => {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:8000/api/reset-password', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ const ResetPassword = () => {
           <div className="flex items-center justify-center mb-2">
             {gymSettings?.logo ? (
               <img 
-                src={`http://localhost:8000/storage/${gymSettings.logo}`} 
+                src={`${import.meta.env.VITE_STORAGE_URL}/${gymSettings.logo}`} 
                 alt="Logo Gym" 
                 className="h-16 w-auto object-contain drop-shadow-lg" 
               />

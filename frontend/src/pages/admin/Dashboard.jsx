@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Users, UserPlus, CreditCard, AlertCircle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, alert = false }) => (
   <div className={`bg-card p-4 rounded-xl border ${alert ? 'border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-border shadow-sm'}`}>
