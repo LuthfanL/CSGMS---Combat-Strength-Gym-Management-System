@@ -58,6 +58,7 @@ Persyaratan utama proyek:
 - **Perpanjangan Membership**: Member dapat memilih paket membership yang tersedia untuk memperpanjang masa aktif membership. Setelah pembayaran dikonfirmasi admin, sistem otomatis memperpanjang masa aktif membership dari tanggal expired terakhir.
 - **Laporan & Cetak**: Filter rentang tanggal, cetak laporan member, kehadiran, pendapatan; pisahkan metode pembayaran cash dan QRIS.
 - **Pengaturan Gym**: Owner edit info gym (nama, logo, deskripsi, alamat, kontak, email, sosial media) dan jam operasional per hari (buka/tutup).
+- **Asisten Virtual (Hybrid Chatbot)**: Tersedia widget chatbot interaktif (pendekatan *hybrid* antara logika sistem dan AI Gemini) di Frontend. Chatbot memadukan data langsung dari database untuk mengecek status membership atau harga paket, lalu merangkainya dengan gaya bahasa natural dari AI.
 - **Audit Log**: Catat aktivitas admin (create, update, delete) lengkap dengan timestamp, data lama dan baru.
 - **Manajemen Akun Admin**: Owner tambah/edit/nonaktifkan akun admin.
 
@@ -118,6 +119,7 @@ flowchart TD
     C -->|Mail / Queue| F[Email Service]
     C -->|Scheduler| G[Laravel Scheduler]
     C -->|Sanctum Auth| H[Authentication & Authorization]
+    C -->|External API| I[Google Gemini AI]
 ```
 
 Penjelasan:
@@ -127,6 +129,7 @@ Penjelasan:
 - **File Storage** (Laravel Storage) menyimpan logo gym, foto member, dan gambar QR code yang dihasilkan; bisa menggunakan disk lokal atau cloud storage.
 - **Email Service**: Laravel Mail mengirim invoice dan notifikasi H‑3 expired. Proses pengiriman berat (notifikasi otomatis) dijalankan secara asinkron melalui Laravel Queue dan dijadwalkan oleh Laravel Scheduler, sehingga tidak memperlambat respons API.
 - **Sanctum Authentication** menyediakan token API (atau cookie‑based session) untuk mengamankan endpoint; middleware membedakan peran pengguna.
+- **Hybrid Chatbot (AI & Sistem)**: Backend API memadukan logika pengambilan data internal (seperti paket dan status member) dengan pemrosesan bahasa alami dari Google Gemini untuk menghasilkan respons yang akurat, sesuai konteks gym, dan luwes.
 - Seluruh perubahan data penting dicatat oleh aplikasi Laravel ke dalam tabel audit log, tanpa memerlukan lapisan terpisah.
 
 ## 7. Database Schema
@@ -391,6 +394,7 @@ Rekomendasi teknologi dengan arsitektur frontend‑backend terpisah menggunakan 
 - **ORM & Migrasi**: [Eloquent ORM](https://laravel.com/docs/eloquent) + [Laravel Migration](https://laravel.com/docs/migrations) — query builder object‑relational yang kuat beserta version control skema database.
 - **Authentication & Authorization**: [Laravel Sanctum](https://laravel.com/docs/sanctum) — autentikasi token untuk SPA (React) berbasis cookie/session atau API token, mendukung multi‑role (owner, admin, member) dengan middleware bawaan.
 - **Validation**: [Laravel Form Request Validation](https://laravel.com/docs/validation#form-request-validation) — validasi request type‑safe, memastikan data yang masuk ke API sesuai aturan.
+- **AI Integration**: [Google Gemini API](https://ai.google.dev/) — ditenagai oleh model bahasa besar (LLM) yang diintegrasikan secara *hybrid* dengan data database untuk fitur asisten virtual interaktif (Hybrid Chatbot).
 - **QR Code Generation**: `endroid/qr-code` (PHP) — membuat QR code statis dari `member_code` di sisi backend, gambar disimpan melalui Laravel Storage.
 - **Email Service**: [Laravel Mail](https://laravel.com/docs/mail) dengan SMTP/Resend — kirim invoice dan notifikasi H‑3 expired, dijalankan oleh Laravel Scheduler dan Queue untuk proses asinkron.
 - **Scheduler & Queue**: [Laravel Scheduler](https://laravel.com/docs/scheduling) + [Laravel Queue](https://laravel.com/docs/queues) — otomatiskan pengiriman email reminder expired dan pembuatan invoice tanpa menunggu request.
