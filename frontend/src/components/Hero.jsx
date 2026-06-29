@@ -2,25 +2,29 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useGym } from '../context/GymContext';
-
+import cs1 from '../assets/cs1.jpeg';
+import cs2 from '../assets/cs2.jpeg';
+import cs3 from '../assets/cs3.jpeg';
+import cs4 from '../assets/cs4.jpeg';
+import cs6 from '../assets/cs6.png';
 const motivationData = [
   {
     id: 1,
     title: <>Konsistensi adalah <span className="text-primary">Kunci</span></>,
-    description: "Tidak ada hasil instan. Bangun rutinitas yang solid dan lihat bagaimana tubuh Anda bertransformasi hari demi hari. Kami menyediakan fasilitas lengkap untuk mendukung komitmen Anda.",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=1470&auto=format&fit=crop",
+    description: "Perubahan tidak datang dalam semalam. Datang, latihan, dan ulangi. Kami menyediakan tempat, alat, dan suasana yang mendukung agar Anda tetap konsisten mencapai target.",
+    image: cs1,
   },
   {
     id: 2,
     title: <>Lampaui <span className="text-primary">Batas Maksimalmu</span></>,
-    description: "Ketika Anda merasa lelah, di situlah latihan sesungguhnya dimulai. Didukung oleh pelatih profesional dan lingkungan yang suportif untuk mendorong Anda melewati rintangan terberat.",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=1470&auto=format&fit=crop",
+    description: "Setiap latihan adalah kesempatan untuk menjadi lebih kuat dari hari sebelumnya. Dengan pelatih berpengalaman dan fasilitas yang lengkap, Anda bisa berlatih dengan lebih percaya diri.",
+    image: cs3,
   },
   {
     id: 3,
     title: <>Kekuatan <span className="text-primary">Mental & Fisik</span></>,
-    description: "Gym bukan sekadar tentang mengangkat beban berat, melainkan melatih mental untuk pantang menyerah. Raih keseimbangan sempurna antara raga yang kuat dan pikiran yang fokus.",
-    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=1470&auto=format&fit=crop",
+    description: "Latihan bukan hanya membangun otot, tetapi juga membentuk disiplin dan mental yang kuat. Jadikan setiap sesi sebagai langkah menuju versi terbaik diri Anda.",
+    image: cs4,
   }
 ];
 
@@ -31,9 +35,9 @@ const Hero = () => {
     <div className="relative w-full bg-background overflow-hidden">
       {/* FULL BLEED BACKGROUND IMAGE */}
       <div className="absolute top-0 left-0 w-full h-[90vh] md:h-[800px] z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop" 
-          alt="Gym Hero Background" 
+        <img
+          src={cs6}
+          alt="Gym Hero Background"
           className="object-cover w-full h-full opacity-20 dark:opacity-30"
         />
         {/* Gradient fade to background color */}
@@ -61,7 +65,7 @@ const Hero = () => {
           <p className="mt-4 max-w-2xl md:mx-auto text-lg md:text-xl text-foreground/80 mb-10 font-medium">
             {gymSettings?.description || 'Sistem manajemen gym terpadu yang memudahkan pendaftaran, check-in, dan pelacakan perkembangan kebugaran Anda.'}
           </p>
-          
+
           <div className="flex flex-col sm:flex-row justify-start md:justify-center gap-4">
             <Link
               to="/register"
@@ -84,25 +88,25 @@ const Hero = () => {
         {motivationData.map((item, index) => {
           const isEven = index % 2 === 1;
           return (
-            <div 
-              key={item.id} 
+            <div
+              key={item.id}
               className={`flex flex-col ${isEven ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-12 lg:gap-16`}
             >
               {/* Image side */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: isEven ? 50 : -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="w-full md:w-5/12 relative flex justify-center"
               >
-                <div 
+                <div
                   className="relative group overflow-hidden max-w-[240px] lg:max-w-[280px] w-full aspect-square rounded-[2rem] shadow-2xl shadow-primary/5 border border-white/5 transition-transform duration-700 hover:-translate-y-2 hover:shadow-primary/20"
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
                   <div className="absolute inset-0 bg-primary/20 group-hover:bg-transparent transition-colors duration-700 z-10 mix-blend-overlay" />
-                  <img 
-                    src={item.image} 
+                  <img
+                    src={item.image}
                     alt={item.title}
                     className="w-full h-full object-cover grayscale group-hover:grayscale-0 scale-105 group-hover:scale-100 transition-all duration-700"
                   />
@@ -112,7 +116,7 @@ const Hero = () => {
               </motion.div>
 
               {/* Text side */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: isEven ? -50 : 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
