@@ -91,20 +91,20 @@ const Register = () => {
     formData.append('phone', data.phone);
     formData.append('address', data.address.trim());
     formData.append('password', data.password);
-    
+
     if (data.photo && data.photo[0]) {
       formData.append('photo', data.photo[0]);
     }
 
     const result = await register(formData);
-    
+
     if (result.success) {
       toast.success('Pendaftaran berhasil! Selamat datang di CSGMS.');
       navigate('/member/dashboard');
     } else {
       toast.error(result.message || 'Terjadi kesalahan saat pendaftaran.');
     }
-    
+
     setIsSubmitting(false);
   };
 
@@ -140,10 +140,10 @@ const Register = () => {
       <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
         <div className="text-center lg:text-left mb-6 lg:mb-0">
           <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl lg:text-5xl lg:leading-tight">
-            Bergabung <br className="hidden lg:block"/>Bersama Kami
+            Bergabung <br className="hidden lg:block" />Bersama Kami
           </h2>
           <p className="mt-4 text-lg text-foreground/70 max-w-xl mx-auto lg:mx-0">
-            Lengkapi data diri Anda untuk memulai perjalanan kebugaran di CSGMS. Dapatkan akses ke program latihan terbaik dan fasilitas premium.
+            Bergabung sebagai member Combat Strength Gym Kendal dan nikmati kemudahan check-in, pembayaran, serta berbagai fasilitas yang tersedia.
           </p>
         </div>
 
@@ -165,11 +165,11 @@ const Register = () => {
                 <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                   <Upload className="w-6 h-6 text-white mb-1" />
                   <span className="text-xs text-white">Upload</span>
-                  <input 
-                    type="file" 
-                    accept="image/jpeg,image/png,image/jpg" 
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/jpg"
                     className="absolute inset-0 opacity-0 cursor-pointer"
-                    {...registerField('photo', { 
+                    {...registerField('photo', {
                       required: 'Foto wajah wajib diunggah',
                       validate: {
                         fileType: (files) => {
@@ -206,7 +206,7 @@ const Register = () => {
                     className="bg-background block w-full pl-10 pr-3 py-1.5 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                     placeholder="Budi Santoso"
                     onInput={handleNameInput}
-                    {...registerField('name', { 
+                    {...registerField('name', {
                       required: 'Nama lengkap wajib diisi',
                       minLength: { value: 3, message: 'Nama minimal 3 karakter' },
                       maxLength: { value: 255, message: 'Nama maksimal 255 karakter' },
@@ -232,11 +232,11 @@ const Register = () => {
                     autoComplete="off"
                     className="bg-background block w-full pl-10 pr-9 py-1.5 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                     placeholder="budi@example.com"
-                    {...registerField('email', { 
+                    {...registerField('email', {
                       required: 'Email wajib diisi',
-                      pattern: { 
-                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, 
-                        message: 'Format email tidak valid' 
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: 'Format email tidak valid'
                       },
                       onChange: (e) => checkEmailAvailability(e.target.value)
                     })}
@@ -265,7 +265,7 @@ const Register = () => {
                     placeholder="081234567890"
                     onInput={handlePhoneInput}
                     maxLength={15}
-                    {...registerField('phone', { 
+                    {...registerField('phone', {
                       required: 'Nomor HP wajib diisi',
                       minLength: { value: 10, message: 'Nomor HP minimal 10 digit' },
                       maxLength: { value: 15, message: 'Nomor HP maksimal 15 digit' },
@@ -290,7 +290,7 @@ const Register = () => {
                     rows={2}
                     className="bg-background block w-full pl-10 pr-3 py-1.5 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground resize-none"
                     placeholder="Jl. Merdeka No. 123..."
-                    {...registerField('address', { 
+                    {...registerField('address', {
                       required: 'Alamat wajib diisi',
                       minLength: { value: 10, message: 'Alamat minimal 10 karakter' }
                     })}
@@ -311,7 +311,7 @@ const Register = () => {
                     autoComplete="new-password"
                     className="bg-background block w-full pl-10 pr-10 py-1.5 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                     placeholder="••••••••"
-                    {...registerField('password', { 
+                    {...registerField('password', {
                       required: 'Password wajib diisi',
                       minLength: { value: 8, message: 'Password minimal 8 karakter' },
                       validate: {
@@ -358,7 +358,7 @@ const Register = () => {
                     autoComplete="new-password"
                     className="bg-background block w-full pl-10 pr-10 py-1.5 border border-border rounded-md focus:ring-primary focus:border-primary sm:text-sm text-foreground"
                     placeholder="••••••••"
-                    {...registerField('passwordConfirmation', { 
+                    {...registerField('passwordConfirmation', {
                       required: 'Konfirmasi password wajib diisi',
                       validate: value => value === password || 'Password tidak cocok'
                     })}
@@ -389,7 +389,7 @@ const Register = () => {
                 ) : 'Selesaikan Pendaftaran'}
               </button>
             </div>
-            
+
             <p className="text-center text-sm text-foreground/70 mt-3">
               Sudah punya akun? <Link to="/login" className="font-medium text-primary hover:text-primary-hover transition-colors">Masuk di sini</Link>
             </p>
